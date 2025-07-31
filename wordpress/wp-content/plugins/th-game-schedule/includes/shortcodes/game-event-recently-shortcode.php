@@ -18,7 +18,6 @@ class Game_Event_Recently_Shortcode
         // 'AJL011' => THGAMES_URL_PATH . 'assets/img/Monkeys.png',
         // 'AJL022' => THGAMES_URL_PATH . 'assets/img/Monkeys.png',
         // 'AKP011' => THGAMES_URL_PATH . 'assets/img/Hawks.png',
-        // 'AKP022' => THGAMES_URL_PATH . 'assets/img/Hawks.png',
         '69516' => THGAMES_URL_PATH . 'assets/img/TaipeiEastPower.webp',
         '69515' => THGAMES_URL_PATH . 'assets/img/Winstreak.webp',
         '69411' => THGAMES_URL_PATH . 'assets/img/TSGSkyHawks.webp',
