@@ -127,50 +127,149 @@ class Th_Game_Api
      * @param WP_REST_Request $request - API 請求對象
      * @return WP_REST_Response|WP_Error - 回傳數據或錯誤訊息
      */
+    // public function get_schedule(WP_REST_Request $request)
+    // {
+    //     // 取得請求參數
+    //     $year = $request->get_param('year');
+    //     $kind_code = $request->get_param('kindCode');
+    //     $game_date = $request->get_param('gameDate');
+
+    //     // 檢查必填參數 year 是否存在
+    //     if (empty($year)) {
+    //         return new WP_Error('missing_year', 'Year is a required parameter', ['status' => 400]);
+    //     }
+
+    //     // 若沒有提供 kind_code，則預設為空字串
+    //     $kind_code = $kind_code ?: '';
+
+    //     // 若沒有提供 game_date，則預設為空字串
+    //     $game_date = $game_date ?: '';
+
+    //     $url = "https://statsapi.cpbl.com.tw/Api/Record/GetSchedule?year=" . $year;
+    //     if (!empty($kind_code)) {
+    //         $url .= "&kindCode=" . $kind_code;
+    //     }
+    //     if (!empty($game_date)) {
+    //         $url .= "&gameDate=" . $game_date;
+    //     }
+
+    //     $ch = curl_init();
+    //     curl_setopt($ch, CURLOPT_URL, $url);
+    //     curl_setopt($ch, CURLOPT_POST, true);
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    //     //暫時不檢查SSL
+    //     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    //     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+
+    //     $response_data = curl_exec($ch);
+    //     curl_close($ch);
+    //     $response_data = json_decode($response_data, true);
+
+    //     if ($response_data) {
+    //         return new WP_REST_Response($response_data, 200);
+    //     } else {
+    //         return new WP_Error('not_found', 'No stats found', array('status' => 404));
+    //     }
+    // }
+
+    // new function to get schedule data
     public function get_schedule(WP_REST_Request $request)
     {
-        // 取得請求參數
-        $year = $request->get_param('year');
-        $kind_code = $request->get_param('kindCode');
-        $game_date = $request->get_param('gameDate');
+        $game_date = $request->get_param('gameDate') ?: '';
+        $kind_code = $request->get_param('kindCode') ?: '';
 
-        // 檢查必填參數 year 是否存在
-        if (empty($year)) {
-            return new WP_Error('missing_year', 'Year is a required parameter', ['status' => 400]);
-        }
+        // Lấy danh sách post contest_list, lọc theo ngày nếu có
+        $args = [
+            'post_type' => 'contest_list',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'orderby' => 'meta_value',
+            'meta_key' => 'time',
+            'order' => 'ASC'
+        ];
 
-        // 若沒有提供 kind_code，則預設為空字串
-        $kind_code = $kind_code ?: '';
-
-        // 若沒有提供 game_date，則預設為空字串
-        $game_date = $game_date ?: '';
-
-        $url = "https://statsapi.cpbl.com.tw/Api/Record/GetSchedule?year=" . $year;
-        if (!empty($kind_code)) {
-            $url .= "&kindCode=" . $kind_code;
-        }
+        // Nếu có truyền ngày thì lọc các post có chứa ngày đó
         if (!empty($game_date)) {
-            $url .= "&gameDate=" . $game_date;
+            $args['meta_query'] = [
+                [
+                    'key' => 'time',
+                    'value' => $game_date,
+                    'compare' => 'LIKE'
+                ]
+            ];
         }
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $posts = get_posts($args);
 
-        //暫時不檢查SSL
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-
-        $response_data = curl_exec($ch);
-        curl_close($ch);
-        $response_data = json_decode($response_data, true);
-
-        if ($response_data) {
-            return new WP_REST_Response($response_data, 200);
-        } else {
-            return new WP_Error('not_found', 'No stats found', array('status' => 404));
+        if (empty($posts)) {
+            return new WP_REST_Response([
+                'ErrMsg' => 'Không tìm thấy trận đấu nào',
+                'Successed' => false,
+                'ResponseDto' => []
+            ], 200);
         }
+
+        $response = [];
+
+        foreach ($posts as $post) {
+            $id = $post->ID;
+            $f = function_exists('get_fields') ? get_fields($id) : [];
+
+            $home_img = isset($f['HOME']['url']) ? $f['HOME']['url'] : '-';
+            $away_img = isset($f['AWAY']['url']) ? $f['AWAY']['url'] : '-';
+            $time = $f['time'] ?? '-';
+
+            // Lấy ngày từ chuỗi time (dạng yyyy/mm/dd (sat) 18:00)
+            $game_date_value = '-';
+            $game_datetime = '-';
+            if ($time && $time !== '-') {
+                $parts = explode(' ', $time);
+                $game_date_value = isset($parts[0]) ? str_replace('/', '-', $parts[0]) : '-';
+                $game_datetime = $time;
+            }
+
+            $score_tsg = $f['Score-tsg'] ?? [];
+            $score_opp = $f['Score'] ?? [];
+
+            $response[] = [
+                'post_id' => $id,
+                'GameDateTimeS' => $game_datetime,
+                'GameSno' => $id,
+                'GameDate' => $game_date_value,
+                'GameResult' => ($score_tsg['total'] ?? 0) . '-' . ($score_opp['total'] ?? 0),
+                'VisitingTeamCode' => '-', // nếu có sẽ thêm sau
+                'VisitingTeamName' => 'AWAY',
+                'HomeTeamCode' => '-',
+                'HomeTeamName' => 'HOME',
+                'FieldAbbe' => $f['location'] ?? '-',
+                'VisitingScore' => (int)($score_opp['total'] ?? 0),
+                'HomeScore' => (int)($score_tsg['total'] ?? 0),
+
+                'HOME' => $home_img,
+                'AWAY' => $away_img,
+
+                'Score_tsg_1st' => (int)($score_tsg['1st'] ?? 0),
+                'Score_tsg_2nd' => (int)($score_tsg['2nd'] ?? 0),
+                'Score_tsg_3rd' => (int)($score_tsg['3rd'] ?? 0),
+                'Score_tsg_4th' => (int)($score_tsg['4th'] ?? 0),
+                'Score_tsg_5th' => (int)($score_tsg['5th'] ?? 0),
+                'Score_tsg_total' => (int)($score_tsg['total'] ?? 0),
+
+                'Score_1st' => (int)($score_opp['1st'] ?? 0),
+                'Score_2nd' => (int)($score_opp['2nd'] ?? 0),
+                'Score_3rd' => (int)($score_opp['3rd'] ?? 0),
+                'Score_4th' => (int)($score_opp['4th'] ?? 0),
+                'Score_5th' => (int)($score_opp['5th'] ?? 0),
+                'Score_total' => (int)($score_opp['total'] ?? 0),
+            ];
+        }
+
+        return new WP_REST_Response([
+            'ErrMsg' => '',
+            'Successed' => true,
+            'ResponseDto' => $response
+        ], 200);
     }
 
     /**
