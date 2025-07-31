@@ -1,0 +1,94 @@
+.players-stats-content {
+    position: relative;
+}
+
+.players-stats-mask {
+    position: absolute;
+    min-width: 100%;
+    min-height: 100%;
+    background-color: rgba(255, 255, 255, 0.527);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.players-stats-loading {
+    max-width: 125px;
+    max-height: 125px;
+}
+
+.players-stats-thead {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    margin-bottom: 6px;
+}
+
+.players-stats-th {
+    height: 45px;
+    background-color: #fff;
+    padding: 6px 3px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.players-stats-th>div {
+    width: 100%;
+    height: 100%;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.players-stats-th>div.stats-tab-active {
+    color: #fff;
+    background-color: #08453a;
+}
+
+.players-tab-hidden {
+    display: none !important;
+}
+
+.players-stats-display {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 10% 25% 40% 25%;
+    grid-row-gap: 6px;
+}
+
+.players-stats-block {
+    background-color: #fff;
+    padding: 6px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 75px;
+    font-size: 16px;
+}
+
+.players-stats-ndata {
+    grid-column: span 4;
+    min-height: 74.97px;
+}
+
+.player-name {
+    width: 100%;
+    text-align: left;
+    font-size: 16px;
+}
+
+.players-stats-img {
+    width: 50px;
+    min-height: 62.97px;
+    object-fit: contain;
+    object-position: center bottom;
+    background-color: #eaeaeb;
+}

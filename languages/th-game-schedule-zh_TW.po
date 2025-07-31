@@ -1,0 +1,63 @@
+"Project-Id-Version: th-game-schedule\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-12-28 00:00+0800\n"
+"PO-Revision-Date: 2022-12-28 00:00+0800\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.0.1\n"
+"X-Loco-Version: 2.5.5; wp-5.8.3\n"
+"X-Domain: th-game-schedule\n"
+
+
+msgid "Game Event"
+msgstr "最近賽事"
+
+msgid "Game Schedule"
+msgstr "最近賽事"
+
+msgid "All Schedule"
+msgstr "全部對戰"
+
+msgid "Add New"
+msgstr "新增對戰"
+
+msgid "Game Information"
+msgstr "賽事資訊"
+
+msgid "Game Number"
+msgstr "比賽編號"
+
+msgid "Game Location"
+msgstr "比賽地點"
+
+msgid "Home Away"
+msgstr "主客場"
+
+msgid "Home Team"
+msgstr "主場球隊"
+
+msgid "Away Team"
+msgstr "客場球隊"
+
+msgid "Score"
+msgstr "分數"
+
+msgid "Team"
+msgstr "隊名"
+
+msgid "Game Score"
+msgstr "比分"
+
+msgid "Default Image"
+msgstr "預設圖片"
+
+msgid "Postponed"
+msgstr "延賽"
+
+msgid "Game Calendar"
+msgstr "賽程表"

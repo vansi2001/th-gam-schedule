@@ -1,0 +1,281 @@
+.game-calendar-wrapper {
+    position: relative;
+}
+
+.game-calendar-content {
+    position: relative;
+}
+
+.year-month-title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.month-switcher-btn {
+    margin: 0px 10px;
+    border: none;
+    background: none;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.year-month-text {
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.display-tabs {
+    flex: 1;
+    display: flex;
+    justify-content: end;
+}
+
+.display-tabs>button {
+    padding: 4px 6px;
+    border: none;
+    margin-left: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: #cfcfda;
+    color: #fff;
+}
+
+.display-tabs>button .btn-svg-icon {
+    fill: #fff;
+}
+
+.display-tabs>button.calendar-tab-active {
+    background-color: #08453a !important;
+    color: #fff !important;
+}
+
+.display-tabs>button.calendar-tab-active .btn-svg-icon {
+    fill: #fff !important;
+}
+
+.game-calendar-table {
+    table-layout: fixed;
+}
+
+.game-calendar-table>thead {
+    background-color: #08453a;
+    color: #fff;
+    font-size: 16px;
+}
+
+.game-calendar-table th {
+    border: 1px solid #cfcfda;
+}
+
+.game-calendar-table td {
+    border: 1px solid #cfcfda;
+}
+
+.game-calendar-table>thead>tr>th {
+    text-align: center;
+}
+
+.game-calendar-table .calendar-day-text {
+    text-align: right;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+
+.game-calendar-table .calendar-day-text>.calendar-non-day {
+    color: #cfcfda !important;
+}
+
+.game-calendar-table .calendar-day-text>.calendar-today {
+    color: #D9AC40;
+}
+
+.calendar-day-info {
+    min-height: 145px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+.game-info-cell {
+    padding: 10px 0px;
+    width: 90%;
+}
+
+.game-info-cell>div {
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.game-detail-info>div {
+    text-align: center;
+    margin: 5px 0px;
+    width: 32%;
+    white-space: nowrap;
+}
+
+.game-detail-info>div.team-versus {
+    font-size: 14px;
+}
+
+.game-detail-info>div.team-score {
+    font-size: 20px;
+}
+
+.game-detail-info>div:nth-child(3n+2) {
+    width: 36%;
+}
+
+.game-detail-info>div>img {
+    height: 40px;
+    width: 40px;
+    object-fit: contain;
+}
+
+.game-info-cell>div.game-location-time {
+    flex-wrap: nowrap;
+    justify-content: center;
+}
+
+.game-info-cell>div.game-location-time div {
+    padding: 0px 3px;
+}
+
+.day-game-switcher {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.day-game-switcher>button {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: rgb(240, 240, 240);
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: .5;
+}
+
+.day-game-switcher>button:hover {
+    transition: all .5s;
+    background-color: rgb(199, 199, 199);
+    opacity: 1;
+}
+
+.day-game-switcher>button.game-prev {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='5 0 320 512' width='13px' height='13px'%3E%3C!--! Font Awesome Pro 6.3.0 by %40fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons  Inc. --%3E%3Cpath d='M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 246.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z'/%3E%3C/svg%3E");
+}
+
+.day-game-switcher>button.game-next {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-5 0 320 512' width='13px' height='13px'%3E%3C!--! Font Awesome Pro 6.3.0 by %40fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons  Inc. --%3E%3Cpath d='M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z'/%3E%3C/svg%3E");
+}
+
+.calendar-list-view {
+    display: none;
+    min-height: 200px;
+}
+
+.calendar-list-date {
+    padding: 10px;
+    background-color: #08453a;
+    color: #fff;
+    border-bottom: 1px solid #cfcfda;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+}
+
+.calendar-list-content {
+    padding: 5px 10px;
+    border: 1px solid#cfcfda;
+    background-color: #f4f4f4;
+}
+
+.calendar-list-content:not(:first-child){
+    border-top: none;
+}
+
+.per-game {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 5px 0px;
+    display: flex;
+    align-items: center;
+}
+
+.per-game-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #08453a;
+    margin: 0px 10px;
+}
+
+.per-game-location {
+    margin-left: 20px;
+}
+
+.game-postponed {
+    color: rgb(255, 93, 93);
+}
+
+.calendar-tbody {
+    background-color: #fff;
+}
+
+.per-game-time,
+.per-game-location {
+    white-space: nowrap;
+}
+
+.calendar-loading-mask {
+    background-color: rgba(255, 255, 255, 0.527);
+    width: 100%;
+    height: 100%;
+    min-height: 200px;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.calendar-loading-mask>div {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.calendar-loading {
+    max-height: 100%;
+    object-fit: contain;
+}
+
+@media (max-width:1023px) {
+    .calendar-table-view {
+        display: none;
+    }
+
+    .calendar-list-view {
+        display: block;
+    }
+
+    .display-tabs>button {
+        display: none;
+    }
+}
