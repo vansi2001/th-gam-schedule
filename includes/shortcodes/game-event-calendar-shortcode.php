@@ -73,6 +73,11 @@ class Game_Event_Calendar_Shortcode
             'AJL022' => THGAMES_URL_PATH . 'assets/img/Monkeys.png',
             'AKP011' => THGAMES_URL_PATH . 'assets/img/Hawks.png',
             'AKP022' => THGAMES_URL_PATH . 'assets/img/Hawks.png',
+            
+            '69516' => THGAMES_URL_PATH . 'assets/img/TaipeiEastPower.png',
+            '69515' => THGAMES_URL_PATH . 'assets/img/Winstreak.png',
+            '69411' => THGAMES_URL_PATH . 'assets/img/TSGSkyHawks.png',
+            '69518' => THGAMES_URL_PATH . 'assets/img/TaoyuanLeopards.png',
         );
         $game_status = array(
             0 => '結束',
@@ -242,28 +247,115 @@ class Game_Event_Calendar_Shortcode
                                     <?php endforeach; ?>
                                 </tr>
                             </thead>
-                            <tbody class="calendar-tbody">
-                                <?php foreach ($month['calendar'] as $week) : ?>
-                                    <tr>
-                                        <?php foreach ($week as $day) : ?>
-                                            <td data-date="<?php echo esc_attr($day[2]) ?>">
-                                                <div class="calendar-day-text">
-                                                    <span class="<?php
-                                                                    $the_day = date('Y-m-d', strtotime($day[1] . '-' . $day[0]));
-                                                                    if ($day[1] !== $month['year_month']) echo 'calendar-non-day';
-                                                                    if ($the_day === $server_web_today) echo 'calendar-today';
-                                                                    ?>">
-                                                        <?php echo esc_html($day[0]) ?>
-                                                    </span>
-                                                </div>
-                                                <div class="calendar-day-info">
+                             <tbody class="calendar-tbody">
+                                    <?php foreach ($month['calendar'] as $week) : ?>
+                                        <tr>
+                                            <?php foreach ($week as $day) : ?>
+                                                <td data-date="<?php echo esc_attr($day[2]) ?>">
+                                                    <div class="calendar-day-text">
+                                                        <span class="<?php
+                                                            $the_day = date('Y-m-d', strtotime($day[1] . '-' . $day[0]));
+                                                            if ($day[1] !== $month['year_month']) echo 'calendar-non-day';
+                                                            if ($the_day === $server_web_today) echo ' calendar-today';
+                                                        ?>">
+                                                            <?php echo esc_html($day[0]) ?>
+                                                        </span>
+                                                    </div>
+                                                    <div class="calendar-day-info">
+                                                        <?php
+                                                        $args = [
+                                                            'post_type'      => 'contest_list',
+                                                            'posts_per_page' => -1,
+                                                            'post_status'    => 'publish',
+                                                        ];
+                                                        $query = new \WP_Query($args);
+                                                        $has_game = false;
 
-                                                </div>
-                                            </td>
-                                        <?php endforeach ?>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
+                                                        if ($query->have_posts()) {
+                                                            while ($query->have_posts()) {
+                                                                $query->the_post();
+                                                                $fields    = function_exists('get_fields') ? get_fields(get_the_ID()) : [];
+                                                                $date_part = !empty($fields['time']) ? explode(' ', $fields['time'])[0] : '';
+
+                                                                if ($date_part !== $day[2]) {
+                                                                    continue;
+                                                                }
+                                                                $has_game = true;
+
+                                                                // Lấy game_number
+                                                                $game_number = esc_html($fields['game_number'] ?? get_the_ID());
+
+                                                                // Ảnh đội HOME & AWAY
+                                                                $home_img = is_array($fields['HOME'] ?? '') 
+                                                                            ? ($fields['HOME']['url'] ?? '') 
+                                                                            : ($fields['HOME'] ?? '');
+                                                                $away_img = is_array($fields['AWAY'] ?? '') 
+                                                                            ? ($fields['AWAY']['url'] ?? '') 
+                                                                            : ($fields['AWAY'] ?? '');
+
+                                                                // Địa điểm & giờ
+                                                                $location   = is_array($fields['location'] ?? '') 
+                                                                            ? ($fields['location']['name'] ?? '') 
+                                                                            : ($fields['location'] ?? '');
+                                                                $match_time = '';
+                                                                if (!empty($fields['time'])) {
+                                                                    $parts = explode(' ', $fields['time']);
+                                                                    $match_time = isset($parts[1]) 
+                                                                                ? esc_html($parts[1]) 
+                                                                                : esc_html($fields['time']);
+                                                                }
+
+                                                                // Lấy điểm từng set
+                                                                $score_tsg = is_array($fields['Score-tsg'] ?? []) 
+                                                                            ? $fields['Score-tsg'] 
+                                                                            : [];
+                                                                $score_opp = is_array($fields['Score'] ?? []) 
+                                                                            ? $fields['Score'] 
+                                                                            : [];
+
+                                                                // Tính số set thắng–thua
+                                                                $home_sets = $away_sets = 0;
+                                                                for ($i = 1; $i <= 5; $i++) {
+                                                                    $key = $i . 'th';
+                                                                    $h = (int) ($score_tsg[$key] ?? 0);
+                                                                    $a = (int) ($score_opp[$key] ?? 0);
+                                                                    if ($h > $a) {
+                                                                        $home_sets++;
+                                                                    } elseif ($a > $h) {
+                                                                        $away_sets++;
+                                                                    }
+                                                                }
+
+                                                                // Hiển thị kết quả
+                                                                echo '<section class="game-result-cell" style="display:flex;flex-direction:column;align-items:center;padding:6px 0;">';
+                                                                echo '<span class="game-number" style="font-size:14px;font-weight:bold;color:#555;margin:0 4px;">'.$game_number.'</span>';
+                                                                echo '<div class="result-header" style="display:flex;align-items:center;justify-content:center;gap:6px;">';
+                                                                echo '<div class="team-logo" style="width:28px;height:28px;"><img src="'.esc_url($home_img).'" alt="" style="width:100%;height:100%;object-fit:contain;"></div>';
+                                                                echo '<span class="sets-score" style="font-size:18px;font-weight:bold;color:#000;">'.$home_sets.'</span>';
+                                                                echo '<span class="status" style="font-size:14px;color:#333;margin:0 4px;">FINAL</span>';
+                                                                echo '<span class="sets-score" style="font-size:18px;font-weight:bold;color:#000;">'.$away_sets.'</span>';
+                                                                echo '<div class="team-logo" style="width:28px;height:28px;"><img src="'.esc_url($away_img).'" alt="" style="width:100%;height:100%;object-fit:contain;"></div>';
+                                                                echo '</div>';
+                                                                echo '<div class="result-footer" style="display:flex;justify-content:center;gap:8px;margin-top:4px;font-size:12px;color:#666;">';
+                                                                echo '<span style="font-weight:bold">'.$location.'</span>';
+                                                                echo '<span style="font-weight:bold">'.$match_time.'</span>';
+                                                                echo '</div>';
+                                                                echo '</section>';
+                                                            }
+                                                            wp_reset_postdata();
+                                                        }
+
+                                                        if (!$has_game) {
+                                                            echo '<div class="no-game">無賽事</div>';
+                                                        }
+                                                        ?>
+                                                    </div>
+                                                </td>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    <?php endforeach; ?>
+</tbody>
+
                         </table>
                     </div>
                     <div class="calendar-list-view" data-month-list="<?php echo esc_attr($month['year_month']); ?>">

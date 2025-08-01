@@ -19,6 +19,13 @@ class Game_Event_Recently_Shortcode
         'AJL022' => THGAMES_URL_PATH . 'assets/img/Monkeys.png',
         'AKP011' => THGAMES_URL_PATH . 'assets/img/Hawks.png',
         'AKP022' => THGAMES_URL_PATH . 'assets/img/Hawks.png',
+
+        // 新增的隊伍圖片
+
+        '69516' => THGAMES_URL_PATH . 'assets/img/TaipeiEastPower.png',
+        '69515' => THGAMES_URL_PATH . 'assets/img/Winstreak.png',
+        '69411' => THGAMES_URL_PATH . 'assets/img/TSGSkyHawks.png',
+        '69518' => THGAMES_URL_PATH . 'assets/img/TaoyuanLeopards.png',
     );
 
     public function __construct()
@@ -127,25 +134,167 @@ class Game_Event_Recently_Shortcode
     }
 
     //新增admin-ajax.php接口
-    public function ajax_cbpl_recently_game_data()
-    {
+    // public function ajax_cbpl_recently_game_data()
+    // {
+    //     if (empty($_POST)) {
+    //         wp_send_json_error('Error: Method Not Allowed', 405);
+    //         wp_die();
+    //     }
+
+    //     $query_year = date("Y");
+    //     $query_kind_code = 'A';
+    //     $query_total_games = '6';
+    //     $query_future_games = '3';
+    //     if (isset($_POST['year'])) $query_year = $_POST['year'];
+    //     if (isset($_POST['kindCode'])) $query_kind_code = $_POST['kindCode'];
+    //     if (isset($_POST['totalGames'])) $query_total_games = $_POST['totalGames'];
+    //     if (isset($_POST['futureGames'])) $query_future_games = $_POST['futureGames'];
+
+    //     $response_data = $this->curl_cbpl_recently_game_data($query_year, $query_kind_code);
+    //     $format_data = $this->format_cbpl_recently_game_data($response_data, $query_total_games, $query_future_games);
+    //     wp_send_json($format_data);
+    //     wp_die();
+    // }
+
+    
+    // new ajax_cbpl_recently_game_data
+    // 新增admin-ajax.php接口
+    public function ajax_cbpl_recently_game_data() {
         if (empty($_POST)) {
             wp_send_json_error('Error: Method Not Allowed', 405);
             wp_die();
         }
 
-        $query_year = date("Y");
-        $query_kind_code = 'A';
-        $query_total_games = '6';
-        $query_future_games = '3';
-        if (isset($_POST['year'])) $query_year = $_POST['year'];
-        if (isset($_POST['kindCode'])) $query_kind_code = $_POST['kindCode'];
-        if (isset($_POST['totalGames'])) $query_total_games = $_POST['totalGames'];
-        if (isset($_POST['futureGames'])) $query_future_games = $_POST['futureGames'];
+        $query_total_games  = isset($_POST['totalGames'])  ? intval($_POST['totalGames'])  : 6;
+        $query_future_games = isset($_POST['futureGames']) ? intval($_POST['futureGames']) : 3;
 
-        $response_data = $this->curl_cbpl_recently_game_data($query_year, $query_kind_code);
-        $format_data = $this->format_cbpl_recently_game_data($response_data, $query_total_games, $query_future_games);
-        wp_send_json($format_data);
+        $args = [
+        'post_type'      => 'contest_list',
+        'post_status'    => 'publish',
+        'orderby'        => 'post_date',
+        'order'          => 'ASC',
+        'posts_per_page' => 6
+    ];
+
+        $query = new \WP_Query($args);
+        $response_data = [];
+
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
+                $query->the_post();
+                $post_id = get_the_ID();
+                $meta    = get_post_meta($post_id);
+                $title  = get_the_title($post_id);
+
+                // ✅ Lấy đội HOME & AWAY
+                $home_id = $meta['HOME'][0] ?? '';
+                $away_id = $meta['AWAY'][0] ?? '';
+                $home_logo_final = $home_logo ?: ($this->default_img[$home_id] ?? $this->default_img['69515']);
+                $away_logo_final = $away_logo ?: ($this->default_img[$away_id] ?? $this->default_img['69516']);
+
+
+                // $home_name = $home_id ? get_the_title($home_id) : 'HOME';
+                // $away_name = $away_id ? get_the_title($away_id) : 'AWAY';
+
+                // $title = $meta['post_title'][0] ?? '';
+
+                $home_logo = $home_id ? get_the_post_thumbnail_url($home_id, 'full') : '';
+                $away_logo = $away_id ? get_the_post_thumbnail_url($away_id, 'full') : '';
+
+                $location = $meta['location'][0] ?? '';
+
+                $time_str = $meta['time'][0] ?? '';
+                $game_date = $time_str;
+
+                // $home_score_set_1 = $meta['Score-tsg_1st'][0] ?? '-';
+                // $home_score_set_2 = $meta['Score-tsg_2nd'][0] ?? '-';
+                // $home_score_set_3 = $meta['Score-tsg_3rd'][0] ?? '-';
+                // $home_score_set_4 = $meta['Score-tsg_4th'][0] ?? '-';
+                // $home_score_set_5 = $meta['Score-tsg_5th'][0] ?? '-';
+
+                // $away_score_set_1 = $meta['Score_1st'][0] ?? '-';
+                // $away_score_set_2 = $meta['Score_2nd'][0] ?? '-';
+                // $away_score_set_3 = $meta['Score_3rd'][0] ?? '-';
+                // $away_score_set_4 = $meta['Score_4th'][0] ?? '-';
+                // $away_score_set_5 = $meta['Score_5th'][0] ?? '-';
+
+                $home_set_scores = [
+        $meta['Score-tsg_1st'][0] ?? '-',
+        $meta['Score-tsg_2nd'][0] ?? '-',
+        $meta['Score-tsg_3rd'][0] ?? '-',
+        $meta['Score-tsg_4th'][0] ?? '-',
+        $meta['Score-tsg_5th'][0] ?? '-'
+    ];
+
+    $away_set_scores = [
+        $meta['Score_1st'][0] ?? '-',
+        $meta['Score_2nd'][0] ?? '-',
+        $meta['Score_3rd'][0] ?? '-',
+        $meta['Score_4th'][0] ?? '-',
+        $meta['Score_5th'][0] ?? '-'
+    ];
+
+
+                // $home_score = $meta['Score-tsg_total'][0] ?? '-';
+                // $home_score = 0;
+                // $away_score = $meta['Score_total'][0] ?? '-';
+                // $away_score = 0;
+
+                
+    $home_win_sets = 0;
+    $away_win_sets = 0;
+
+    for ($i = 0; $i < 5; $i++) {
+        $home = $home_set_scores[$i];
+        $away = $away_set_scores[$i];
+
+        if ($home !== '-' && $away !== '-') {
+            $home = intval($home);
+            $away = intval($away);
+
+            // Kiểm tra nếu đây là set 5 thì dùng mốc 15 điểm
+            $min_point = ($i === 4) ? 15 : 25;
+
+            if (($home >= $min_point || $away >= $min_point) && abs($home - $away) >= 2) {
+                if ($home > $away) {
+                    $home_win_sets++;
+                } elseif ($away > $home) {
+                    $away_win_sets++;
+                }
+            }
+        }
+    }
+
+                $result = 0;
+
+                $game_status = [
+            0 => 'Final',
+            1 => '延賽',
+            2 => '保留',
+            4 => '取消',
+            9 => 'VS',
+        ];
+
+                $response_data[] = [
+                    'FieldAbbe'        => $location,
+                    'GameSno'          => $post_id,
+                    'GameDate'         => $game_date,
+                    'GameDateTimeS'    => $time_str,
+                    'HomeTeamCode'     => $home_id,
+                    'HomeTeamName'     => $home_name,
+                    'HomeTeamImg'      => $home_logo_final,
+                    'HomeScore'        => $home_win_sets ?: '-',
+                    'VisitingTeamCode' => $away_id,
+                    'VisitingTeamName' => $away_name,
+                    'VisitingImg'      => $away_logo_final,
+                    'VisitingScore'    => $away_win_sets ?: '-',
+                    'GameResult'       => $home_score ? $game_status[$result ?? 9] : $game_status[9] , // Final
+                ];
+            }
+            wp_reset_postdata();
+        }
+
+        wp_send_json($response_data);
         wp_die();
     }
     //cURL CBPL API
@@ -172,103 +321,243 @@ class Game_Event_Recently_Shortcode
         };
     }
     //整理賽程資料
-    private function format_cbpl_recently_game_data($response_data, $total, $future)
-    {
-        if (empty($response_data)) return [];
-        usort($response_data, function ($a, $b) {
-            if (strtotime($a['GameDate']) == strtotime($b['GameDate'])) return 0;
-            return (strtotime($a['GameDate']) > strtotime($b['GameDate'])) ? 1 : -1;
-        });
+    // private function format_cbpl_recently_game_data($response_data, $total, $future)
+    // {
+    //     if (empty($response_data)) return [];
+    //     usort($response_data, function ($a, $b) {
+    //         if (strtotime($a['GameDate']) == strtotime($b['GameDate'])) return 0;
+    //         return (strtotime($a['GameDate']) > strtotime($b['GameDate'])) ? 1 : -1;
+    //     });
 
-        if (!is_numeric($total)) $total = 3;
-        if ($total > 10) $total = 10;
-        if ($total < 3) $total = 3;
-        if (!is_numeric($future)) $future = 1;
-        if ($future <= 0) $future = 1;
-        $current_date = date("Y-m-d H:i:s");
-        $current_date_index = 0;
-        $index_record_flag = true;
-        $th_games = array();
-        foreach ($response_data as $game_data) {
-            if ($game_data['HomeTeamCode'] === "AKP011" || $game_data['VisitingTeamCode'] === "AKP011") {
-                array_push($th_games, $game_data);
-                if (strtotime($current_date) < strtotime($game_data['GameDateTimeS'])) {
-                    if ($index_record_flag) {
-                        $current_date_index = count($th_games) - 1;
-                        $index_record_flag = false;
-                    }
+    //     if (!is_numeric($total)) $total = 3;
+    //     if ($total > 10) $total = 10;
+    //     if ($total < 3) $total = 3;
+    //     if (!is_numeric($future)) $future = 1;
+    //     if ($future <= 0) $future = 1;
+    //     $current_date = date("Y-m-d H:i:s");
+    //     $current_date_index = 0;
+    //     $index_record_flag = true;
+    //     $th_games = array();
+    //     foreach ($response_data as $game_data) {
+    //         if ($game_data['HomeTeamCode'] === "AKP011" || $game_data['VisitingTeamCode'] === "AKP011") {
+    //             array_push($th_games, $game_data);
+    //             if (strtotime($current_date) < strtotime($game_data['GameDateTimeS'])) {
+    //                 if ($index_record_flag) {
+    //                     $current_date_index = count($th_games) - 1;
+    //                     $index_record_flag = false;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     if ($index_record_flag) $current_date_index = count($th_games) - 1;
+
+    //     $display_games = array();
+    //     for ($i = $current_date_index; $i < $current_date_index + $future; $i++) {
+    //         if ($i >= $current_date_index + $total) break;
+    //         if (!isset($th_games[$i])) break;
+    //         array_push($display_games, $th_games[$i]);
+    //     }
+
+    //     //狀況一 顯示場數總量扣除目前計算的未來場數，往前補過去比賽補至足夠場數
+    //     $remain_games_count = $total - count($display_games);
+    //     for ($j = $current_date_index - 1; $j > $current_date_index - $remain_games_count - 1; $j--) {
+    //         if (!isset($th_games[$j])) break;
+    //         array_unshift($display_games, $th_games[$j]);
+    //     }
+
+    //     //狀況二 補完過去比賽場數仍不足需求總場數，往後補未來比賽至足夠場數
+    //     $remain_games_count = $total - count($display_games);
+    //     if ($remain_games_count > 0) {
+    //         $start_fill_inidex = $future  + $current_date_index;
+    //         for ($k = $start_fill_inidex; $k < $start_fill_inidex + $remain_games_count; $k++) {
+    //             if (!isset($th_games[$k])) break;
+    //             array_push($display_games, $th_games[$k]);
+    //         }
+    //     }
+
+    //     //整理成前端所需格式
+    //     $game_status = array(
+    //         0 => 'Final',
+    //         1 => '延賽',
+    //         2 => '保留',
+    //         4 => '取消',
+    //         9 => 'VS',
+    //     );
+    //     $week_key = array(
+    //         0 => '日',
+    //         1 => '一',
+    //         2 => '二',
+    //         3 => '三',
+    //         4 => '四',
+    //         5 => '五',
+    //         6 => '六',
+    //     );
+    //     $return_format_data = array();
+    //     for ($l = 0; $l < count($display_games); $l++) {
+    //         $game_result_code = $display_games[$l]['GameResult'];
+    //         if ($game_result_code === "") $game_result_code = 9;
+    //         $game_result_name = isset($game_status[$game_result_code]) ? $game_status[$game_result_code] : '-';
+    //         $game_today = date("Y-m-d", strtotime($current_date))  == date("Y-m-d", strtotime($display_games[$l]['GameDateTimeS'])) ? 'T' : 'F';
+
+    //         array_push($return_format_data, array(
+    //             'FieldAbbe' => $display_games[$l]['FieldAbbe'],
+    //             'GameSno' => $display_games[$l]['GameSno'],
+    //             'GameDateTimeS' => date('H:i', strtotime($display_games[$l]['GameDateTimeS'])),
+    //             'GameDate' => date('m/d', strtotime($display_games[$l]['GameDate'])),
+    //             'GameWeek' => $week_key[date('w', strtotime($display_games[$l]['GameDate']))],
+    //             'HomeTeamCode' => $display_games[$l]['HomeTeamCode'],
+    //             'HomeTeamName' => $display_games[$l]['HomeTeamName'],
+    //             'HomeTeamImg' => $this->default_img[$display_games[$l]['HomeTeamCode']],
+    //             'HomeScore' => $display_games[$l]['HomeScore'],
+    //             'VisitingTeamCode' => $display_games[$l]['VisitingTeamCode'],
+    //             'VisitingTeamName' => $display_games[$l]['VisitingTeamName'],
+    //             'VisitingImg' => $this->default_img[$display_games[$l]['VisitingTeamCode']],
+    //             'VisitingScore' => $display_games[$l]['VisitingScore'],
+    //             'GameResultName' => $game_result_name,
+    //             'GameResult' => $game_result_code,
+    //             'GameToday' => $game_today
+    //         ));
+    //     }
+    //     return $return_format_data;
+    // }
+
+    // new format_cbpl_recently_game_data
+
+private function format_cbpl_recently_game_data($response_data, $total, $future)
+{
+    if (empty($response_data)) return [];
+
+    usort($response_data, function ($a, $b) {
+        $dateA = $this->convert_time_to_date($a['GameDate']);
+        $dateB = $this->convert_time_to_date($b['GameDate']);
+        return strtotime($dateA) <=> strtotime($dateB);
+    });
+
+    if (!is_numeric($total)) $total = 3;
+    if ($total > 10) $total = 10;
+    if ($total < 3) $total = 3;
+    if (!is_numeric($future)) $future = 1;
+    if ($future <= 0) $future = 1;
+
+    $current_date = date("Y-m-d H:i:s");
+    $current_date_index = 0;
+    $index_record_flag = true;
+    $th_games = [];
+
+    foreach ($response_data as $game_data) {
+        if ($game_data['HomeTeamCode'] === "AKP011" || $game_data['VisitingTeamCode'] === "AKP011") {
+            $th_games[] = $game_data;
+
+            if (strtotime($current_date) < strtotime($this->convert_time_to_date($game_data['GameDate']))) {
+                if ($index_record_flag) {
+                    $current_date_index = count($th_games) - 1;
+                    $index_record_flag = false;
                 }
             }
         }
-        if ($index_record_flag) $current_date_index = count($th_games) - 1;
-
-        $display_games = array();
-        for ($i = $current_date_index; $i < $current_date_index + $future; $i++) {
-            if ($i >= $current_date_index + $total) break;
-            if (!isset($th_games[$i])) break;
-            array_push($display_games, $th_games[$i]);
-        }
-
-        //狀況一 顯示場數總量扣除目前計算的未來場數，往前補過去比賽補至足夠場數
-        $remain_games_count = $total - count($display_games);
-        for ($j = $current_date_index - 1; $j > $current_date_index - $remain_games_count - 1; $j--) {
-            if (!isset($th_games[$j])) break;
-            array_unshift($display_games, $th_games[$j]);
-        }
-
-        //狀況二 補完過去比賽場數仍不足需求總場數，往後補未來比賽至足夠場數
-        $remain_games_count = $total - count($display_games);
-        if ($remain_games_count > 0) {
-            $start_fill_inidex = $future  + $current_date_index;
-            for ($k = $start_fill_inidex; $k < $start_fill_inidex + $remain_games_count; $k++) {
-                if (!isset($th_games[$k])) break;
-                array_push($display_games, $th_games[$k]);
-            }
-        }
-
-        //整理成前端所需格式
-        $game_status = array(
-            0 => 'Final',
-            1 => '延賽',
-            2 => '保留',
-            4 => '取消',
-            9 => 'VS',
-        );
-        $week_key = array(
-            0 => '日',
-            1 => '一',
-            2 => '二',
-            3 => '三',
-            4 => '四',
-            5 => '五',
-            6 => '六',
-        );
-        $return_format_data = array();
-        for ($l = 0; $l < count($display_games); $l++) {
-            $game_result_code = $display_games[$l]['GameResult'];
-            if ($game_result_code === "") $game_result_code = 9;
-            $game_result_name = isset($game_status[$game_result_code]) ? $game_status[$game_result_code] : '-';
-            $game_today = date("Y-m-d", strtotime($current_date))  == date("Y-m-d", strtotime($display_games[$l]['GameDateTimeS'])) ? 'T' : 'F';
-
-            array_push($return_format_data, array(
-                'FieldAbbe' => $display_games[$l]['FieldAbbe'],
-                'GameSno' => $display_games[$l]['GameSno'],
-                'GameDateTimeS' => date('H:i', strtotime($display_games[$l]['GameDateTimeS'])),
-                'GameDate' => date('m/d', strtotime($display_games[$l]['GameDate'])),
-                'GameWeek' => $week_key[date('w', strtotime($display_games[$l]['GameDate']))],
-                'HomeTeamCode' => $display_games[$l]['HomeTeamCode'],
-                'HomeTeamName' => $display_games[$l]['HomeTeamName'],
-                'HomeTeamImg' => $this->default_img[$display_games[$l]['HomeTeamCode']],
-                'HomeScore' => $display_games[$l]['HomeScore'],
-                'VisitingTeamCode' => $display_games[$l]['VisitingTeamCode'],
-                'VisitingTeamName' => $display_games[$l]['VisitingTeamName'],
-                'VisitingImg' => $this->default_img[$display_games[$l]['VisitingTeamCode']],
-                'VisitingScore' => $display_games[$l]['VisitingScore'],
-                'GameResultName' => $game_result_name,
-                'GameResult' => $game_result_code,
-                'GameToday' => $game_today
-            ));
-        }
-        return $return_format_data;
     }
+    if ($index_record_flag) $current_date_index = count($th_games) - 1;
+
+    $display_games = [];
+    for ($i = $current_date_index; $i < $current_date_index + $future; $i++) {
+        if ($i >= $current_date_index + $total) break;
+        if (!isset($th_games[$i])) break;
+        $display_games[] = $th_games[$i];
+    }
+
+    $remain_games_count = $total - count($display_games);
+    for ($j = $current_date_index - 1; $j > $current_date_index - $remain_games_count - 1; $j--) {
+        if (!isset($th_games[$j])) break;
+        array_unshift($display_games, $th_games[$j]);
+    }
+
+    $remain_games_count = $total - count($display_games);
+    if ($remain_games_count > 0) {
+        $start_fill_index = $future + $current_date_index;
+        for ($k = $start_fill_index; $k < $start_fill_index + $remain_games_count; $k++) {
+            if (!isset($th_games[$k])) break;
+            $display_games[] = $th_games[$k];
+        }
+    }
+
+    $game_status = [
+        0 => 'Final',
+        1 => '延賽',
+        2 => '保留',
+        4 => '取消',
+        9 => 'VS',
+    ];
+    $week_key = [
+        'Sun' => '日',
+        'Mon' => '一',
+        'Tue' => '二',
+        'Wed' => '三',
+        'Thu' => '四',
+        'Fri' => '五',
+        'Sat' => '六',
+    ];
+
+    $return_format_data = [];
+    $result = 0;
+    foreach ($display_games as $g) {
+    // $game_result_code = $g['GameResult'] ?? '-';
+    // $game_result_name = $game_status[$game_result_code] ?? '-';
+    $game_result_name = $game_status[$result] ?? '-';
+
+    $full_date = $this->convert_time_to_date($g['GameDate']);
+    $timestamp = strtotime($full_date);
+
+    if ($timestamp) {
+        $md_format = date('m/d', $timestamp);         
+        $weekday_en = date('D', $timestamp);          
+        $weekday_zh = $week_key[$weekday_en] ?? '-'; 
+        $game_date_display = "{$md_format}";          
+        $game_week = $weekday_zh;                     
+        $game_today = (date("Y-m-d") == date("Y-m-d", $timestamp)) ? 'T' : 'F';
+    } else {
+        $game_date_display = '??/??';
+        $game_week = '-';
+        $game_today = 'F';
+    }
+
+    $game_time = '';
+    if (!empty($g['GameDateTimeS']) && preg_match('/(\d{2}:\d{2})/', $g['GameDateTimeS'], $matches)) {
+        $game_time = $matches[1];
+    }
+
+    $return_format_data[] = [
+        'FieldAbbe'        => $g['FieldAbbe'],
+        'GameSno'          => $g['GameSno'],
+        'GameDate' => $g['GameDate'],
+        'HomeTeamCode'     => $g['HomeTeamCode'],
+        'VisitingTeamCode' => $g['VisitingTeamCode'],
+        'HomeTeamName'     => $g['HomeTeamName'],
+        'VisitingTeamName' => $g['VisitingTeamName'],
+        'HomeScore'        => $g['HomeScore'],
+        'VisitingScore'    => $g['VisitingScore'],
+        'HomeTeamImg' => !empty($g['HomeTeamImg']) ? $g['HomeTeamImg'] : ($this->default_img[$g['HomeTeamCode']] ?? ''),
+        'VisitingImg' => !empty($g['VisitingImg']) ? $g['VisitingImg'] : ($this->default_img[$g['VisitingTeamCode']] ?? ''),
+        // 'GameResultName'   => $game_result_name,
+        'GameResultName'   => $g['GameResult'] ?? '-',
+        'GameResult'       => $game_result_code,
+        'GameToday'        => $game_today
+    ];
+}
+
+    return $return_format_data;
+}
+
+private function convert_time_to_date($str) {
+    if (preg_match('/(\d{2})\/(\d{2})/', $str, $matches)) {
+        $month = $matches[1];
+        $day   = $matches[2];
+
+        $year = date('Y');
+
+        return date('Y-m-d', strtotime("{$year}-{$month}-{$day}"));
+    }
+    return '';
+}
+
+
 }

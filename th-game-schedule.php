@@ -17,6 +17,9 @@ use Th_Game_Schedule\includes\shortcodes\Game_Event_Player_Stats_Shortcode;
 use Th_Game_Schedule\includes\shortcodes\Game_Event_Standings_Shortcode;
 use Th_Game_Schedule\includes\Game_Event_Stats_Scheduler;
 use Th_Game_Schedule\includes\Th_Game_Api;
+use Th_Game_Schedule\includes\Th_New_Api;
+use Th_Game_Schedule\includes\Th_Test_Api;
+
 
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
@@ -28,6 +31,8 @@ class Th_Game_Schedule
     {
         $this->init();
         new Th_Game_Api;
+        new Th_New_Api();
+        new Th_Test_Api;
     }
 
     public function init()

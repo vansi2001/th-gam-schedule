@@ -25,7 +25,7 @@ jQuery(function ($) {
       gameCardHtml += `
         <div class="th-game-card th-game-bg ${thGameToday}" data-scroll="${key}">
           <div class="th-game-info">
-              <span class="game-info-text">${element.GameDate}(${element.GameWeek}) ${element.GameDateTimeS}</span>
+              <span class="game-info-text">${element.GameDate}</span>
               <span class="game-info-text"><i class="fas fa-map-marker-alt"></i>${element.FieldAbbe}</span>
           </div>
           <div class="th-game-result">
