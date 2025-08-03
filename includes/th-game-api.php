@@ -1,12 +1,19 @@
 <?php
 
+// namespace Th_Game_Schedule\includes;
+
+// use WP_Error;
+// use WP_Query;
+// use WP_REST_Request;
+// use WP_REST_Response;
+
 namespace Th_Game_Schedule\includes;
 
-use WP_Error;
-use WP_Query;
 use WP_REST_Request;
 use WP_REST_Response;
-
+use DateTime;
+use DateTimeZone;
+use WP_Query;
 /**
  * 球隊相關的 API，負責提供球隊的統計數據
  */
@@ -172,106 +179,275 @@ class Th_Game_Api
     //         return new WP_Error('not_found', 'No stats found', array('status' => 404));
     //     }
     // }
-
     // new function to get schedule data
-    public function get_schedule(WP_REST_Request $request)
-    {
-        $game_date = $request->get_param('gameDate') ?: '';
-        $kind_code = $request->get_param('kindCode') ?: '';
+        public function get_schedule(WP_REST_Request $request) {
+        // Lấy các tham số từ request và làm sạch
+        $year_param = sanitize_text_field($request->get_param('year'));
+        $game_date_param = sanitize_text_field($request->get_param('game_date'));
+        
+        // Mặc định năm là năm hiện tại nếu không có tham số 'year'
+        $current_year = date('Y');
+        $query_year = !empty($year_param) ? $year_param : $current_year;
 
-        // Lấy danh sách post contest_list, lọc theo ngày nếu có
+        // Xây dựng các tham số cho WP_Query
         $args = [
-            'post_type' => 'contest_list',
+            'post_type'   => 'contest_list',
             'post_status' => 'publish',
             'numberposts' => -1,
-            'orderby' => 'meta_value',
-            'meta_key' => 'time',
-            'order' => 'ASC'
+            'meta_key'    => 'time',
+            'orderby'     => 'meta_value',
+            'order'       => 'ASC'
         ];
 
-        // Nếu có truyền ngày thì lọc các post có chứa ngày đó
-        if (!empty($game_date)) {
-            $args['meta_query'] = [
-                [
-                    'key' => 'time',
-                    'value' => $game_date,
-                    'compare' => 'LIKE'
-                ]
+        $meta_query = ['relation' => 'AND'];
+
+        // Lọc theo năm nếu tham số year được cung cấp
+        if (!empty($year_param)) {
+            // Trường hợp ACF time có năm (đã giải quyết ở câu trả lời trước)
+            $meta_query[] = [
+                'key'     => 'time',
+                'value'   => $year_param,
+                'compare' => 'LIKE'
             ];
+        }
+
+        // Lọc theo game_date
+        if (!empty($game_date_param)) {
+            // Tách tháng và ngày từ tham số game_date
+            if (preg_match('/^\d{4}\/(\d{1,2})\/(\d{1,2})$/', $game_date_param, $matches)) {
+                $query_month = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+                $query_day   = str_pad($matches[2], 2, '0', STR_PAD_LEFT);
+                
+                // Lọc theo tháng và ngày trong trường meta_value 'time'
+                $meta_query[] = [
+                    'key'     => 'time',
+                    'value'   => $query_month . '/' . $query_day,
+                    'compare' => 'LIKE'
+                ];
+            }
+        }
+        
+        if (count($meta_query) > 1) {
+            $args['meta_query'] = $meta_query;
         }
 
         $posts = get_posts($args);
 
         if (empty($posts)) {
-            return new WP_REST_Response([
-                'ErrMsg' => 'Không tìm thấy trận đấu nào',
-                'Successed' => false,
+            return [
+                'ErrMsg'      => 'Không tìm thấy bài viết nào phù hợp',
+                'Successed'   => false,
                 'ResponseDto' => []
-            ], 200);
+            ];
         }
 
         $response = [];
-
-        foreach ($posts as $post) {
+        foreach ($posts as $i => $post) {
             $id = $post->ID;
             $f = function_exists('get_fields') ? get_fields($id) : [];
 
-            $home_img = isset($f['HOME']['url']) ? $f['HOME']['url'] : '-';
-            $away_img = isset($f['AWAY']['url']) ? $f['AWAY']['url'] : '-';
-            $time = $f['time'] ?? '-';
+            $raw_time = $f['time'] ?? '';
+            // Sử dụng năm đã xác định ở trên để bổ sung cho convert_to_iso_datetime
+            $timeS = $this->convert_to_iso_datetime($raw_time, $query_year);
+            $datetime = $timeS ? strtotime($timeS) : false;
 
-            // Lấy ngày từ chuỗi time (dạng yyyy/mm/dd (sat) 18:00)
-            $game_date_value = '-';
-            $game_datetime = '-';
-            if ($time && $time !== '-') {
-                $parts = explode(' ', $time);
-                $game_date_value = isset($parts[0]) ? str_replace('/', '-', $parts[0]) : '-';
-                $game_datetime = $time;
+            // ... (Phần xử lý dữ liệu còn lại giống như phiên bản trước) ...
+            $score_tsg = get_field('Score-tsg', $id) ?: [];
+            $score_opp = get_field('Score', $id) ?: [];
+
+            $home_team = '';
+            $visiting_team = '';
+            $title = $post->post_title;
+            if (preg_match('/\d{1,2}\/\d{1,2}\s+(.*?)\s+VS\s+(.*)/u', $title, $matches)) {
+                $home_team = trim($matches[1]);
+                $visiting_team = trim($matches[2]);
             }
 
-            $score_tsg = $f['Score-tsg'] ?? [];
-            $score_opp = $f['Score'] ?? [];
-
+            $home_img = $f['HOME'] ?? '';
+            if (is_array($home_img) && isset($home_img['url'])) {
+                $home_img = $home_img['url'];
+            }
+            $away_img = $f['AWAY'] ?? '';
+            if (is_array($away_img) && isset($away_img['url'])) {
+                $away_img = $away_img['url'];
+            }
+            $game_date_formatted = $datetime ? date('Y-m-d', $datetime) : '-';
+            $game_month = $datetime ? date('m', $datetime) : '-';
+            $game_day = $datetime ? date('d', $datetime) : '-';
+            $game_year = $datetime ? date('Y', $datetime) : '';
+            $home_total = (int) ($score_tsg['total'] ?? 0);
+            $away_total = (int) ($score_opp['total'] ?? 0);
+            $sets = [];
+            foreach (['1st', '2nd', '3rd', '4th', '5th'] as $set_key) {
+                $sets[] = [
+                    'SetNumber'        => str_replace(['st', 'nd', 'rd', 'th'], '', $set_key),
+                    'VisitingSetScore' => (int)($score_opp[$set_key] ?? 0),
+                    'HomeSetScore'     => (int)($score_tsg[$set_key] ?? 0),
+                ];
+            }
+            $result_data = $this->evaluate_volleyball_game_result($score_tsg, $score_opp, $timeS);
             $response[] = [
-                'post_id' => $id,
-                'GameDateTimeS' => $game_datetime,
-                'GameSno' => $id,
-                'GameDate' => $game_date_value,
-                'GameResult' => ($score_tsg['total'] ?? 0) . '-' . ($score_opp['total'] ?? 0),
-                'VisitingTeamCode' => '-', // nếu có sẽ thêm sau
-                'VisitingTeamName' => 'AWAY',
-                'HomeTeamCode' => '-',
-                'HomeTeamName' => 'HOME',
-                'FieldAbbe' => $f['location'] ?? '-',
-                'VisitingScore' => (int)($score_opp['total'] ?? 0),
-                'HomeScore' => (int)($score_tsg['total'] ?? 0),
-
-                'HOME' => $home_img,
-                'AWAY' => $away_img,
-
-                'Score_tsg_1st' => (int)($score_tsg['1st'] ?? 0),
-                'Score_tsg_2nd' => (int)($score_tsg['2nd'] ?? 0),
-                'Score_tsg_3rd' => (int)($score_tsg['3rd'] ?? 0),
-                'Score_tsg_4th' => (int)($score_tsg['4th'] ?? 0),
-                'Score_tsg_5th' => (int)($score_tsg['5th'] ?? 0),
-                'Score_tsg_total' => (int)($score_tsg['total'] ?? 0),
-
-                'Score_1st' => (int)($score_opp['1st'] ?? 0),
-                'Score_2nd' => (int)($score_opp['2nd'] ?? 0),
-                'Score_3rd' => (int)($score_opp['3rd'] ?? 0),
-                'Score_4th' => (int)($score_opp['4th'] ?? 0),
-                'Score_5th' => (int)($score_opp['5th'] ?? 0),
-                'Score_total' => (int)($score_opp['total'] ?? 0),
+                'Seq'                    => (string)($i + 1),
+                'Game_title'             => $post->post_title,
+                'PresentStatus'          => $result_data['GameStatus'],
+                'IsGameStop'             => $result_data['GameIsStop'] ?? false,
+                'GameDateTimeS'          => $timeS ?: '',
+                'GameDateTimeE'          => null,
+                'GameDuringTime'         => null,
+                'MultyGame'              => '-',
+                'Year'                   => $game_year,
+                'KindCode'               => '-',
+                'GameSeasonCode'         => '-',
+                'GameSno'                => '-',
+                'UpdateTime'             => current_time('mysql'),
+                'GameDate'               => $game_date_formatted,
+                'GameDateMonth'          => $game_month,
+                'GameDateDay'            => $game_day,
+                'GameResult'             => $result_data['HomeSetsWon'] . '-' . $result_data['AwaySetsWon'],
+                'PreExeDate'             => '-',
+                'HomeTeamCode'           => '-',
+                'HomeTeamName'           => $home_team,
+                'VisitingTeamCode'       => '-',
+                'VisitingTeamName'       => $visiting_team,
+                'FieldNo'                => '-',
+                'FieldAbbe'              => $f['location'] ?? '-',
+                'VisitingWonScore'       => $away_total,
+                'HomeWonScore'           => $home_total,
+                'SetsScoreDetail'        => $sets,
+                'GameResultName'         => $result_data['GameResultName'],
+                'HomeSetsWon'            => $result_data['HomeSetsWon'],
+                'VisitingSetsWon'        => $result_data['AwaySetsWon'],
+                'WinningTeam'            => $result_data['WinningTeam'],
+                'LoserTeam'              => $result_data['LosingTeam'],
+                'VisitingClubSmallImgPath' => $away_img ?: '-',
+                'HomeClubSmallImgPath'   => $home_img ?: '-',
             ];
         }
 
         return new WP_REST_Response([
-            'ErrMsg' => '',
-            'Successed' => true,
+            'ErrMsg'      => '',
+            'Successed'   => true,
             'ResponseDto' => $response
         ], 200);
     }
 
+    // Hàm helper đã được cập nhật để nhận tham số $year
+    private function convert_to_iso_datetime($input, $default_year) {
+        // Regex sẽ khớp với cả chuỗi có năm và không có năm
+        if (preg_match('/^(?:(\d{4})\/)?(\d{1,2})\/(\d{1,2})[\(（][^\]\)]+[\)）]\s+(\d{1,2}):(\d{2})$/u', $input, $matches)) {
+            // Nếu chuỗi có năm, lấy năm đó. Ngược lại, dùng năm mặc định.
+            $year  = !empty($matches[1]) ? $matches[1] : $default_year;
+            $month = str_pad($matches[2], 2, '0', STR_PAD_LEFT);
+            $day   = str_pad($matches[3], 2, '0', STR_PAD_LEFT);
+            $hour  = str_pad($matches[4], 2, '0', STR_PAD_LEFT);
+            $min   = str_pad($matches[5], 2, '0', STR_PAD_LEFT);
+            
+            return "{$year}-{$month}-{$day}T{$hour}:{$min}:00";
+        }
+        return null;
+    }
+    
+    // Các hàm khác giữ nguyên
+    public function auto_calculate_volleyball_score_total($post_id) {
+        if (get_post_type($post_id) !== 'contest_list') {
+            return;
+        }
+
+        $score_tsg = get_field('Score-tsg', $post_id);
+        if (is_array($score_tsg) && (!isset($score_tsg['total']) || empty($score_tsg['total']))) {
+            $sum_tsg = 0;
+            foreach (['1st', '2nd', '3rd', '4th', '5th'] as $set) {
+                $sum_tsg += intval($score_tsg[$set] ?? 0);
+            }
+            $score_tsg['total'] = $sum_tsg;
+            update_field('Score-tsg', $score_tsg, $post_id);
+        }
+
+        $score_opponent = get_field('Score', $post_id);
+        if (is_array($score_opponent) && (!isset($score_opponent['total']) || empty($score_opponent['total']))) {
+            $sum_opponent = 0;
+            foreach (['1st', '2nd', '3rd', '4th', '5th'] as $set) {
+                $sum_opponent += intval($score_opponent[$set] ?? 0);
+            }
+            $score_opponent['total'] = $sum_opponent;
+            update_field('Score', $score_opponent, $post_id);
+        }
+    }
+
+    private function evaluate_volleyball_game_result($score_tsg, $score_opp, $iso_time) {
+        $now = new DateTime('now', new DateTimeZone('Asia/Taipei'));
+        $game_time = !empty($iso_time) ? new DateTime($iso_time) : null;
+        $home_sets_won = 0;
+        $away_sets_won = 0;
+        $sets_played = 0;
+        $is_ongoing = false;
+        $sets = ['1st', '2nd', '3rd', '4th', '5th'];
+
+        foreach ($sets as $index => $set_key) {
+            $tsg_score = (int)($score_tsg[$set_key] ?? 0);
+            $opp_score = (int)($score_opp[$set_key] ?? 0);
+
+            if ($tsg_score === 0 && $opp_score === 0) {
+                if ($sets_played > 0) {
+                    $is_ongoing = true;
+                }
+                continue;
+            }
+            
+            $sets_played++;
+            $win_score = ($index < 4) ? 25 : 15;
+            $score_difference = abs($tsg_score - $opp_score);
+
+            if (($tsg_score >= $win_score && $score_difference >= 2) || ($opp_score >= $win_score && $score_difference >= 2)) {
+                if ($tsg_score > $opp_score) {
+                    $home_sets_won++;
+                } else {
+                    $away_sets_won++;
+                }
+            } else {
+                $is_ongoing = true;
+            }
+        }
+        
+        $game_status = 9;
+        if ($home_sets_won >= 3 || $away_sets_won >= 3) {
+            $game_status = 0;
+        } elseif ($is_ongoing) {
+            $game_status = 2;
+        } elseif ($sets_played > 0) {
+            $game_status = 2;
+        } elseif ($game_time !== null && $now > $game_time) {
+            $game_status = 1;
+            if($game_status === 1){
+                $game_is_stop = true;
+            }
+        }
+
+        $winning_team = '-';
+        $losing_team = '-';
+        $game_result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
+
+        if ($game_status === 0) {
+            if ($home_sets_won > $away_sets_won) {
+                $winning_team = 'HOME';
+                $losing_team = 'AWAY';
+            } else {
+                $winning_team = 'AWAY';
+                $losing_team = 'HOME';
+            }
+            $game_result_name = "{$winning_team} WIN";
+        }
+
+        return [
+            'GameStatus' => $game_status,
+            'GameIsStop' => isset($game_is_stop) ? $game_is_stop : false,
+            'GameResultName' => $game_result_name,
+            'HomeSetsWon' => $home_sets_won,
+            'AwaySetsWon' => $away_sets_won,
+            'WinningTeam' => $winning_team,
+            'LosingTeam' => $losing_team,
+        ];
+    }
     /**
      * 取得球員異動
      *
