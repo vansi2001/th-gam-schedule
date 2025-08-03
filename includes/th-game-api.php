@@ -179,17 +179,22 @@ class Th_Game_Api
     //         return new WP_Error('not_found', 'No stats found', array('status' => 404));
     //     }
     // }
-    // new function to get schedule data
+
+//AD New code
+// new function to get schedule data
         public function get_schedule(WP_REST_Request $request) {
         // Lấy các tham số từ request và làm sạch
+        // 從請求中獲取參數並進行清理
         $year_param = sanitize_text_field($request->get_param('year'));
         $game_date_param = sanitize_text_field($request->get_param('game_date'));
         
         // Mặc định năm là năm hiện tại nếu không có tham số 'year'
+        // 如果沒有提供 'year' 參數，則默認為當前年份
         $current_year = date('Y');
         $query_year = !empty($year_param) ? $year_param : $current_year;
 
         // Xây dựng các tham số cho WP_Query
+        // 構建 WP_Query 的參數
         $args = [
             'post_type'   => 'contest_list',
             'post_status' => 'publish',
@@ -203,7 +208,9 @@ class Th_Game_Api
 
         // Lọc theo năm nếu tham số year được cung cấp
         if (!empty($year_param)) {
-            // Trường hợp ACF time có năm (đã giải quyết ở câu trả lời trước)
+            // Trường hợp ACF time có năm (đã giải quyết ở câu trả lời trước) -
+            // // 如果提供了 year 參數，則過濾時間
+
             $meta_query[] = [
                 'key'     => 'time',
                 'value'   => $year_param,
@@ -211,7 +218,8 @@ class Th_Game_Api
             ];
         }
 
-        // Lọc theo game_date
+        // Lọc theo game_date- 過濾 game_date
+        //
         if (!empty($game_date_param)) {
             // Tách tháng và ngày từ tham số game_date
             if (preg_match('/^\d{4}\/(\d{1,2})\/(\d{1,2})$/', $game_date_param, $matches)) {
@@ -258,7 +266,7 @@ class Th_Game_Api
             $home_team = '';
             $visiting_team = '';
             $title = $post->post_title;
-            if (preg_match('/\d{1,2}\/\d{1,2}\s+(.*?)\s+VS\s+(.*)/u', $title, $matches)) {
+            if (preg_match('/\d{1,2}\/\d{1,2}\s+(.*?)\s+VS\s+(.*)/ui', $title, $matches)) {
                 $home_team = trim($matches[1]);
                 $visiting_team = trim($matches[2]);
             }
@@ -323,6 +331,16 @@ class Th_Game_Api
                 'HomeClubSmallImgPath'   => $home_img ?: '-',
             ];
         }
+            usort($response, function($a, $b) {
+            $timeA = strtotime($a['GameDateTimeS']);
+            $timeB = strtotime($b['GameDateTimeS']);
+            
+            // So sánh thời gian
+            if ($timeA === $timeB) {
+                return 0;
+            }
+            return ($timeA < $timeB) ? -1 : 1;
+        });
 
         return new WP_REST_Response([
             'ErrMsg'      => '',
@@ -332,10 +350,12 @@ class Th_Game_Api
     }
 
     // Hàm helper đã được cập nhật để nhận tham số $year
+    // Chuyển đổi định dạng ngày giờ sang ISO 8601 - 將日期時間轉換為 ISO 8601 格式
     private function convert_to_iso_datetime($input, $default_year) {
-        // Regex sẽ khớp với cả chuỗi có năm và không có năm
+        // Regex sẽ khớp với cả chuỗi có năm và không có năm - 正規表達式將匹配包含年份和不包含年份的字符串
         if (preg_match('/^(?:(\d{4})\/)?(\d{1,2})\/(\d{1,2})[\(（][^\]\)]+[\)）]\s+(\d{1,2}):(\d{2})$/u', $input, $matches)) {
             // Nếu chuỗi có năm, lấy năm đó. Ngược lại, dùng năm mặc định.
+            // 如果字符串包含年份，則使用該年份，否則使用默認年份。
             $year  = !empty($matches[1]) ? $matches[1] : $default_year;
             $month = str_pad($matches[2], 2, '0', STR_PAD_LEFT);
             $day   = str_pad($matches[3], 2, '0', STR_PAD_LEFT);
@@ -347,7 +367,7 @@ class Th_Game_Api
         return null;
     }
     
-    // Các hàm khác giữ nguyên
+    // Tự động tính toán tổng điểm bóng chuyền - 自動計算排球總分
     public function auto_calculate_volleyball_score_total($post_id) {
         if (get_post_type($post_id) !== 'contest_list') {
             return;
@@ -411,16 +431,14 @@ class Th_Game_Api
         
         $game_status = 9;
         if ($home_sets_won >= 3 || $away_sets_won >= 3) {
-            $game_status = 0;
-        } elseif ($is_ongoing) {
-            $game_status = 2;
-        } elseif ($sets_played > 0) {
-            $game_status = 2;
+            $game_status = 0; // Kết thúc - 結束
+        } elseif ($is_ongoing || $sets_played > 0) {
+            $game_status = 2; // Đang diễn ra/Tạm dừng - 進行中/暫停
         } elseif ($game_time !== null && $now > $game_time) {
-            $game_status = 1;
-            if($game_status === 1){
-                $game_is_stop = true;
-            }
+            $game_status = 1; // Hoãn - 延期
+            $game_is_stop = true;
+        } else {
+            $game_status = 9; // Chưa đấu - 未開始
         }
 
         $winning_team = '-';
@@ -439,10 +457,10 @@ class Th_Game_Api
         }
 
         return [
-            'GameStatus' => $game_status,
-            'GameIsStop' => isset($game_is_stop) ? $game_is_stop : false,
-            'GameResultName' => $game_result_name,
-            'HomeSetsWon' => $home_sets_won,
+            'GameStatus' => $game_status, // 0: 結束, 1: 延期, 2: 進行中/暫停, 9: 未開始
+            'GameIsStop' => isset($game_is_stop) ? $game_is_stop : false, // true: 暫停, false: 進行中
+            'GameResultName' => $game_result_name, // 結果名稱 -win teamName
+            'HomeSetsWon' => $home_sets_won, // 主隊贏得的局數
             'AwaySetsWon' => $away_sets_won,
             'WinningTeam' => $winning_team,
             'LosingTeam' => $losing_team,
