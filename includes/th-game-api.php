@@ -26,6 +26,9 @@ class Th_Game_Api
     {
         // 註冊 REST API 端點
         add_action('rest_api_init', array($this, 'register_team_stats_routes'));
+         add_action('acf/save_post', [$this, 'auto_calculate_volleyball_score_total'], 20);
+        // Thêm hook mới để xử lý trường 'time'
+        add_action('acf/save_post', [$this, 'auto_add_year_to_time'], 10);
     }
 
     /**
@@ -182,74 +185,119 @@ class Th_Game_Api
 
 //AD New code
 // new function to get schedule data
-        public function get_schedule(WP_REST_Request $request) {
-        // Lấy các tham số từ request và làm sạch
-        // 從請求中獲取參數並進行清理
-        $year_param = sanitize_text_field($request->get_param('year'));
-        $game_date_param = sanitize_text_field($request->get_param('game_date'));
-        
-        // Mặc định năm là năm hiện tại nếu không có tham số 'year'
-        // 如果沒有提供 'year' 參數，則默認為當前年份
+    public function get_schedule(WP_REST_Request $request) {
         $current_year = date('Y');
         $query_year = !empty($year_param) ? $year_param : $current_year;
+        // Lấy các tham số từ request
+        // $year_param       = sanitize_text_field($request->get_param('year'));
+        $game_date_param  = sanitize_text_field($request->get_param('game_date'));
+        $page_param       = $request->get_param('page') ? max(1, (int) $request->get_param('page')) : 1;
+        $per_page_param   = $request->get_param('per_page') ? max(1, (int) $request->get_param('per_page')) : 30;
 
-        // Xây dựng các tham số cho WP_Query
-        // 構建 WP_Query 的參數
-        $args = [
-            'post_type'   => 'contest_list',
-            'post_status' => 'publish',
-            'numberposts' => -1,
-            'meta_key'    => 'time',
-            'orderby'     => 'meta_value',
-            'order'       => 'ASC'
-        ];
-
-        $meta_query = ['relation' => 'AND'];
-
-        // Lọc theo năm nếu tham số year được cung cấp
-        if (!empty($year_param)) {
-            // Trường hợp ACF time có năm (đã giải quyết ở câu trả lời trước) -
-            // // 如果提供了 year 參數，則過濾時間
-
-            $meta_query[] = [
-                'key'     => 'time',
-                'value'   => $year_param,
-                'compare' => 'LIKE'
-            ];
-        }
-
-        // Lọc theo game_date- 過濾 game_date
-        //
-        if (!empty($game_date_param)) {
-            // Tách tháng và ngày từ tham số game_date
-            if (preg_match('/^\d{4}\/(\d{1,2})\/(\d{1,2})$/', $game_date_param, $matches)) {
-                $query_month = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
-                $query_day   = str_pad($matches[2], 2, '0', STR_PAD_LEFT);
-                
-                // Lọc theo tháng và ngày trong trường meta_value 'time'
-                $meta_query[] = [
-                    'key'     => 'time',
-                    'value'   => $query_month . '/' . $query_day,
-                    'compare' => 'LIKE'
-                ];
-            }
-        }
-        
-        if (count($meta_query) > 1) {
-            $args['meta_query'] = $meta_query;
-        }
-
-        $posts = get_posts($args);
-
-        if (empty($posts)) {
+        // Nếu không truyền cả year và game_date thì trả lỗi
+        if (empty($game_date_param)) {
             return [
-                'ErrMsg'      => 'Không tìm thấy bài viết nào phù hợp',
+                'ErrMsg'      => 'Cần truyền ít nhất tham số year hoặc game_date để truy vấn dữ liệu.',
                 'Successed'   => false,
                 'ResponseDto' => []
             ];
         }
 
+        // Tạo meta_query lọc dữ liệu
+        $meta_query = [];
+
+        // Ưu tiên game_date_param (ngày > tháng > năm)
+            if (preg_match('/^\d{4}\/\d{1,2}\/\d{1,2}$/', $game_date_param)) {
+            // YYYY/MM/DD
+            $meta_query[] = [
+                'key'     => 'time',
+                'value'   => $game_date_param,
+                'compare' => 'LIKE'
+            ];
+        } elseif (preg_match('/^\d{4}\/\d{1,2}$/', $game_date_param)) {
+            // YYYY/MM
+            $meta_query[] = [
+                'key'     => 'time',
+                'value'   => $game_date_param,
+                'compare' => 'LIKE'
+            ];
+        } elseif (preg_match('/^\d{4}$/', $game_date_param)) {
+            // YYYY
+            $meta_query[] = [
+                'key'     => 'time',
+                'value'   => $game_date_param,
+                'compare' => 'LIKE'
+            ];
+        } else {
+            return [
+                'ErrMsg'      => 'Tham số game_date không đúng định dạng. Định dạng hợp lệ: yyyy, yyyy/mm hoặc yyyy/mm/dd.',
+                'Successed'   => false,
+                'ResponseDto' => []
+            ];
+        }
+
+        // WP_Query args
+        $args = [
+            'post_type'      => 'contest_list',
+            'post_status'    => 'publish',
+            'posts_per_page' => $per_page_param,
+            'paged'          => $page_param,
+            'meta_key'       => 'time',
+            'orderby'        => 'meta_value',
+            'order'          => 'ASC'
+        ];
+
+        if (!empty($meta_query)) {
+            $args['meta_query'] = [
+                'relation' => 'AND',
+                ...$meta_query
+            ];
+        }
+
+        // Truy vấn
+        $query = new WP_Query($args);
+        $posts = $query->posts;
+
+        $total_posts = (int) $query->found_posts;
+        $total_pages = (int) $query->max_num_pages;
+
+        // Nếu page vượt quá số trang thực tế → chuyển về trang đầu
+        if ($page_param > $total_pages && $total_pages > 0) {
+            $args['paged'] = 1;
+            $query = new WP_Query($args); // Truy vấn lại
+            $posts = $query->posts;
+
+            return [
+                'ErrMsg'      => 'Trang bạn yêu cầu không có dữ liệu, tự động chuyển về trang đầu.',
+                'Successed'   => true,
+                'Pagination'  => [
+                    'CurrentPage' => 1,
+                    'PerPage'     => $per_page_param,
+                    'TotalPages'  => $total_pages,
+                    'TotalPosts'  => $total_posts
+                ],
+                'ResponseDto' => array_map([$this, 'map_post_to_dto'], $posts)
+            ];
+        }
+
+        if (empty($posts)) {
+            return [
+                'ErrMsg'      => 'Không tìm thấy bài viết nào phù hợp.',
+                'Successed'   => false,
+                'Pagination'  => [
+                    'CurrentPage' => $page_param,
+                    'PerPage'     => $per_page_param,
+                    'TotalPages'  => $total_pages,
+                    'TotalPosts'  => $total_posts
+                ],
+                'ResponseDto' => []
+            ];
+        }
+
+        // Xử lý dữ liệu - 處理數據
         $response = [];
+
+        
         foreach ($posts as $i => $post) {
             $id = $post->ID;
             $f = function_exists('get_fields') ? get_fields($id) : [];
@@ -393,7 +441,23 @@ class Th_Game_Api
             update_field('Score', $score_opponent, $post_id);
         }
     }
-
+    // 
+    /**
+ * Tự động thêm năm vào trường 'time' của ACF nếu bị thiếu.
+ *
+ * @param int $post_id ID của bài viết đang được lưu.
+ */
+    public function auto_add_year_to_time($post_id) {
+        // Chỉ xử lý nếu là post type 'contest_list' - 只處理 'contest_list' 的文章類型
+        if (get_post_type($post_id) !== 'contest_list') {
+            return;        }
+        $raw_time = get_field('time', $post_id, false); // 获取 'time' 字段的当前值
+        if (!empty($raw_time) && !preg_match('/^\d{4}\//', $raw_time)) {
+            $current_year = date('Y');
+            $new_time_value = $current_year . '/' . $raw_time;
+            update_field('time', $new_time_value, $post_id);
+        }
+    }
     private function evaluate_volleyball_game_result($score_tsg, $score_opp, $iso_time) {
         $now = new DateTime('now', new DateTimeZone('Asia/Taipei'));
         $game_time = !empty($iso_time) ? new DateTime($iso_time) : null;
