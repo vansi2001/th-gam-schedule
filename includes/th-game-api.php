@@ -192,6 +192,7 @@ class Th_Game_Api
         $day   = $request->get_param('day');
 
         $current_year = date('Y');
+        $query_year = $current_year; // Năm mặc định đặt cho trường nhập thiếu năm - 默認年份
         // Nếu không có指定年份，使用當前年份
         if (!$year) {
             return array(
@@ -225,12 +226,6 @@ class Th_Game_Api
             return [
                 'ErrMsg'      => 'Không tìm thấy bài viết nào phù hợp.',
                 'Successed'   => false,
-                'Pagination'  => [
-                    'CurrentPage' => $page_param,
-                    'PerPage'     => $per_page_param,
-                    'TotalPages'  => $total_pages,
-                    'TotalPosts'  => $total_posts
-                ],
                 'ResponseDto' => []
             ];
         }
