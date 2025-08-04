@@ -82,7 +82,7 @@ class Th_Game_Api
             'methods'  => 'GET', // 允許使用 GET 方法存取 API
             'callback' => array($this, 'get_hitter_data'), // 指定處理請求的函式
             'permission_callback' => '__return_true' // 允許所有人存取 API
-	));
+	    ));
         // 取得記分板資訊
         register_rest_route('th_game/v1', '/GetScoreBoard', array(
             'methods'  => 'GET', // 允許使用 GET 方法存取 API
@@ -186,100 +186,40 @@ class Th_Game_Api
 //AD New code
 // new function to get schedule data
     public function get_schedule(WP_REST_Request $request) {
+
+        $year  = $request->get_param('year');
+        $month = $request->get_param('month');
+        $day   = $request->get_param('day');
+
         $current_year = date('Y');
-        $query_year_param = sanitize_text_field($request->get_param('year'));
-        $query_year = !empty($year_param) ? $year_param : $current_year;
-        // Lấy các tham số từ request
-        // $year_param       = sanitize_text_field($request->get_param('year'));
-        $game_date_param  = sanitize_text_field($request->get_param('game_date'));
-        $page_param       = $request->get_param('page') ? max(1, (int) $request->get_param('page')) : 1;
-        $per_page_param   = $request->get_param('per_page') ? max(1, (int) $request->get_param('per_page')) : 6;
-
-        // Nếu không truyền cả year và game_date thì trả lỗi
-        if (empty($game_date_param)) {
-            return [
-                'ErrMsg'      => 'Cần truyền ít nhất tham số year hoặc game_date để truy vấn dữ liệu.',
-                'Successed'   => false,
-                'ResponseDto' => []
-            ];
+        // Nếu không có指定年份，使用當前年份
+        if (!$year) {
+            return array(
+                "ErrMsg" => "Missing parameter: year",
+                "Successed" => false,
+                "ResponseDto" => []
+            );
         }
-
-        // Tạo meta_query lọc dữ liệu
-        $meta_query = [];
-
-        // Ưu tiên game_date_param (ngày > tháng > năm)
-            if (preg_match('/^\d{4}\/\d{1,2}\/\d{1,2}$/', $game_date_param)) {
-            // YYYY/MM/DD
-            $meta_query[] = [
-                'key'     => 'time',
-                'value'   => $game_date_param,
-                'compare' => 'LIKE'
-            ];
-        } elseif (preg_match('/^\d{4}\/\d{1,2}$/', $game_date_param)) {
-            // YYYY/MM
-            $meta_query[] = [
-                'key'     => 'time',
-                'value'   => $game_date_param,
-                'compare' => 'LIKE'
-            ];
-        } elseif (preg_match('/^\d{4}$/', $game_date_param)) {
-            // YYYY
-            $meta_query[] = [
-                'key'     => 'time',
-                'value'   => $game_date_param,
-                'compare' => 'LIKE'
-            ];
-        } else {
-            return [
-                'ErrMsg'      => 'Tham số game_date không đúng định dạng. Định dạng hợp lệ: yyyy, yyyy/mm hoặc yyyy/mm/dd.',
-                'Successed'   => false,
-                'ResponseDto' => []
-            ];
-        }
-
-        // WP_Query args
-        $args = [
-            'post_type'      => 'contest_list',
-            'post_status'    => 'publish',
-            'posts_per_page' => $per_page_param,
-            'paged'          => $page_param,
-            'meta_key'       => 'time',
+        // 
+        $args = array(
+            'post_type'      => 'contest_list', // CPT bạn tạo bằng CPT UI
+            'posts_per_page' => -1,
             'orderby'        => 'meta_value',
-            'order'          => 'ASC'
-        ];
+            'meta_key'       => 'time', // ngày thi đấu (ACF field)
+            'order'          => 'ASC',
+        );
 
-        if (!empty($meta_query)) {
-            $args['meta_query'] = [
-                'relation' => 'AND',
-                ...$meta_query
-            ];
+        // Tạo mẫu chuỗi cần kiểm tra - 創建要檢查的字符串模式
+        $search_pattern = "$year";
+        if ($month) {
+            $search_pattern .= '/' . str_pad($month, 2, '0', STR_PAD_LEFT);
         }
-
+        if ($day) {
+            $search_pattern .= '/' . str_pad($day, 2, '0', STR_PAD_LEFT);
+        }
         // Truy vấn
         $query = new WP_Query($args);
         $posts = $query->posts;
-
-        $total_posts = (int) $query->found_posts;
-        $total_pages = (int) $query->max_num_pages;
-
-        // Nếu page vượt quá số trang thực tế → chuyển về trang đầu
-        if ($page_param > $total_pages && $total_pages > 0) {
-            $args['paged'] = 1;
-            $query = new WP_Query($args); // Truy vấn lại
-            $posts = $query->posts;
-
-            return [
-                'ErrMsg'      => 'Trang bạn yêu cầu không có dữ liệu, tự động chuyển về trang đầu.',
-                'Successed'   => true,
-                'Pagination'  => [
-                    'CurrentPage' => 1,
-                    'PerPage'     => $per_page_param,
-                    'TotalPages'  => $total_pages,
-                    'TotalPosts'  => $total_posts
-                ],
-                'ResponseDto' => array_map([$this, 'map_post_to_dto'], $posts)
-            ];
-        }
 
         if (empty($posts)) {
             return [
@@ -297,13 +237,15 @@ class Th_Game_Api
 
         // Xử lý dữ liệu - 處理數據
         $response = [];
-
         
         foreach ($posts as $i => $post) {
             $id = $post->ID;
             $f = function_exists('get_fields') ? get_fields($id) : [];
 
             $raw_time = $f['time'] ?? '';
+            if (strpos($raw_time, $search_pattern) !== 0) {
+                continue; // không khớp ngày => bỏ qua
+            }
             // Sử dụng năm đã xác định ở trên để bổ sung cho convert_to_iso_datetime
             $timeS = $this->convert_to_iso_datetime($raw_time, $query_year);
             $datetime = $timeS ? strtotime($timeS) : false;
