@@ -187,12 +187,13 @@ class Th_Game_Api
 // new function to get schedule data
     public function get_schedule(WP_REST_Request $request) {
         $current_year = date('Y');
+        $query_year_param = sanitize_text_field($request->get_param('year'));
         $query_year = !empty($year_param) ? $year_param : $current_year;
         // Lấy các tham số từ request
         // $year_param       = sanitize_text_field($request->get_param('year'));
         $game_date_param  = sanitize_text_field($request->get_param('game_date'));
         $page_param       = $request->get_param('page') ? max(1, (int) $request->get_param('page')) : 1;
-        $per_page_param   = $request->get_param('per_page') ? max(1, (int) $request->get_param('per_page')) : 30;
+        $per_page_param   = $request->get_param('per_page') ? max(1, (int) $request->get_param('per_page')) : 6;
 
         // Nếu không truyền cả year và game_date thì trả lỗi
         if (empty($game_date_param)) {
