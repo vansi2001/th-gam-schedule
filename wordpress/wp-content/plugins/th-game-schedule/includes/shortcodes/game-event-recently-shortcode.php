@@ -245,6 +245,7 @@ for ($i = 0; $i < 5; $i++) {
         4 => '取消',
         9 => 'VS',
     ];
+    $has_score = ($home_win_sets !== 0 || $away_win_sets !== 0);
 
             $response_data[] = [
                 'FieldAbbe'        => $location,
@@ -259,7 +260,9 @@ for ($i = 0; $i < 5; $i++) {
                 'VisitingTeamName' => $away_name,
                 'VisitingImg'      => $away_logo_final,
                 'VisitingScore'    => $away_win_sets ?: '-',
-                'GameResult'       => $home_score ? $game_status[$result ?? 9] : $game_status[9] , // Final
+                // 'GameResult'       => 0, // 0: Final, 1: 延賽, 2: 保留, 4: 取消, 9: VS
+                'GameResult'       => $has_score ? 'Final' : 'VS',
+                // 'GameResult'       => $home_score !== 0 ? $game_status[$result ?? 9] : $game_status[9] , // Final
             ];
         }
         wp_reset_postdata();
