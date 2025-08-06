@@ -137,53 +137,7 @@ class Th_Game_Api
      * @param WP_REST_Request $request - API 請求對象
      * @return WP_REST_Response|WP_Error - 回傳數據或錯誤訊息
      */
-    // public function get_schedule(WP_REST_Request $request)
-    // {
-    //     // 取得請求參數
-    //     $year = $request->get_param('year');
-    //     $kind_code = $request->get_param('kindCode');
-    //     $game_date = $request->get_param('gameDate');
-
-    //     // 檢查必填參數 year 是否存在
-    //     if (empty($year)) {
-    //         return new WP_Error('missing_year', 'Year is a required parameter', ['status' => 400]);
-    //     }
-
-    //     // 若沒有提供 kind_code，則預設為空字串
-    //     $kind_code = $kind_code ?: '';
-
-    //     // 若沒有提供 game_date，則預設為空字串
-    //     $game_date = $game_date ?: '';
-
-    //     $url = "https://statsapi.cpbl.com.tw/Api/Record/GetSchedule?year=" . $year;
-    //     if (!empty($kind_code)) {
-    //         $url .= "&kindCode=" . $kind_code;
-    //     }
-    //     if (!empty($game_date)) {
-    //         $url .= "&gameDate=" . $game_date;
-    //     }
-
-    //     $ch = curl_init();
-    //     curl_setopt($ch, CURLOPT_URL, $url);
-    //     curl_setopt($ch, CURLOPT_POST, true);
-    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    //     //暫時不檢查SSL
-    //     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    //     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-
-    //     $response_data = curl_exec($ch);
-    //     curl_close($ch);
-    //     $response_data = json_decode($response_data, true);
-
-    //     if ($response_data) {
-    //         return new WP_REST_Response($response_data, 200);
-    //     } else {
-    //         return new WP_Error('not_found', 'No stats found', array('status' => 404));
-    //     }
-    // }
-
-//AD New code
+    //AD New code
 // new function to get schedule data
     public function get_schedule(WP_REST_Request $request) {
 
@@ -194,6 +148,7 @@ class Th_Game_Api
         $current_year = date('Y');
         $query_year = $current_year; // Năm mặc định đặt cho trường nhập thiếu năm - 默認年份
         // Nếu không có指定年份，使用當前年份
+
         if (!$year) {
             return array(
                 "ErrMsg" => "Missing parameter: year",
@@ -203,10 +158,10 @@ class Th_Game_Api
         }
         // 
         $args = array(
-            'post_type'      => 'contest_list', // CPT bạn tạo bằng CPT UI
+            'post_type'      => 'contest_list', 
             'posts_per_page' => -1,
             'orderby'        => 'meta_value',
-            'meta_key'       => 'time', // ngày thi đấu (ACF field)
+            'meta_key'       => 'time', 
             'order'          => 'ASC',
         );
 
@@ -218,7 +173,7 @@ class Th_Game_Api
         if ($day) {
             $search_pattern .= '/' . str_pad($day, 2, '0', STR_PAD_LEFT);
         }
-        // Truy vấn
+        // Truy vấn - 查詢
         $query = new WP_Query($args);
         $posts = $query->posts;
 
@@ -230,7 +185,6 @@ class Th_Game_Api
             ];
         }
 
-        // Xử lý dữ liệu - 處理數據
         $response = [];
         
         foreach ($posts as $i => $post) {
@@ -241,7 +195,7 @@ class Th_Game_Api
             if (strpos($raw_time, $search_pattern) !== 0) {
                 continue; // không khớp ngày => bỏ qua
             }
-            // Sử dụng năm đã xác định ở trên để bổ sung cho convert_to_iso_datetime
+
             $timeS = $this->convert_to_iso_datetime($raw_time, $query_year);
             $datetime = $timeS ? strtotime($timeS) : false;
 
@@ -336,7 +290,7 @@ class Th_Game_Api
         ], 200);
     }
 
-    // Hàm helper đã được cập nhật để nhận tham số $year
+    // Hàm helper đã được cập nhật để nhận tham số $year - helper function updated to accept $year parameter
     // Chuyển đổi định dạng ngày giờ sang ISO 8601 - 將日期時間轉換為 ISO 8601 格式
     private function convert_to_iso_datetime($input, $default_year) {
         // Regex sẽ khớp với cả chuỗi có năm và không có năm - 正規表達式將匹配包含年份和不包含年份的字符串
@@ -382,9 +336,9 @@ class Th_Game_Api
     }
     // 
     /**
- * Tự động thêm năm vào trường 'time' của ACF nếu bị thiếu.
+ * Tự động thêm năm vào trường 'time' của ACF nếu bị thiếu. - 自動將年份添加到 ACF 的 'time' 欄位中，如果缺少年份。 
  *
- * @param int $post_id ID của bài viết đang được lưu.
+ * @param int $post_id ID của bài viết đang được lưu. - 當前正在保存的文章 ID。
  */
     public function auto_add_year_to_time($post_id) {
         // Chỉ xử lý nếu là post type 'contest_list' - 只處理 'contest_list' 的文章類型
@@ -398,8 +352,8 @@ class Th_Game_Api
         }
     }
     private function evaluate_volleyball_game_result($score_tsg, $score_opp, $iso_time) {
-        $now = new DateTime('now', new DateTimeZone('Asia/Taipei'));
-        $game_time = !empty($iso_time) ? new DateTime($iso_time) : null;
+        $now = new DateTime('now', new DateTimeZone('Asia/Taipei')); //output: '2023-10-01T12:00:00+08:00'
+        $game_time = !empty($iso_time) ? new DateTime($iso_time) : null; // output: '2023-10-01T12:00:00+08:00'
         $home_sets_won = 0;
         $away_sets_won = 0;
         $sets_played = 0;
@@ -431,18 +385,23 @@ class Th_Game_Api
                 $is_ongoing = true;
             }
         }
-        
-        $game_status = 9;
+
+        $game_status = 9; // 未開始 - 未開始  
+        $game_is_stop = false; // 默認為 false - 默認為 false
+
         if ($home_sets_won >= 3 || $away_sets_won >= 3) {
             $game_status = 0; // Kết thúc - 結束
         } elseif ($is_ongoing || $sets_played > 0) {
-            $game_status = 2; // Đang diễn ra/Tạm dừng - 進行中/暫停
+            if ($game_time !== null && strtotime($now->format('Y-m-d')) > strtotime($game_time->format('Y-m-d'))) {
+             $game_status = 2;   // 保留 s
+                $game_is_stop = true; // 暫停比賽 - 暫停比賽
+            } else{
+                $game_status = 3; // 比賽中 
+            }  
         } elseif ($game_time !== null && $now > $game_time) {
             $game_status = 1; // Hoãn - 延期
             $game_is_stop = true;
-        } else {
-            $game_status = 9; // Chưa đấu - 未開始
-        }
+        } 
 
         $winning_team = '-';
         $losing_team = '-';
@@ -460,7 +419,7 @@ class Th_Game_Api
         }
 
         return [
-            'GameStatus' => $game_status, // 0: 結束, 1: 延期, 2: 進行中/暫停, 9: 未開始
+            'GameStatus' => $game_status, // 0: 結束, 1: 延期, 2: 保留, 9: 未開始, 3: 比賽中
             'GameIsStop' => isset($game_is_stop) ? $game_is_stop : false, // true: 暫停, false: 進行中
             'GameResultName' => $game_result_name, // 結果名稱 -win teamName
             'HomeSetsWon' => $home_sets_won, // 主隊贏得的局數
@@ -469,6 +428,58 @@ class Th_Game_Api
             'LosingTeam' => $losing_team,
         ];
     }
+
+
+
+    // This í old function, not used now
+    // public function get_schedule(WP_REST_Request $request)
+    // {
+    //     // 取得請求參數
+    //     $year = $request->get_param('year');
+    //     $kind_code = $request->get_param('kindCode');
+    //     $game_date = $request->get_param('gameDate');
+
+    //     // 檢查必填參數 year 是否存在
+    //     if (empty($year)) {
+    //         return new WP_Error('missing_year', 'Year is a required parameter', ['status' => 400]);
+    //     }
+
+    //     // 若沒有提供 kind_code，則預設為空字串
+    //     $kind_code = $kind_code ?: '';
+
+    //     // 若沒有提供 game_date，則預設為空字串
+    //     $game_date = $game_date ?: '';
+
+    //     $url = "https://statsapi.cpbl.com.tw/Api/Record/GetSchedule?year=" . $year;
+    //     if (!empty($kind_code)) {
+    //         $url .= "&kindCode=" . $kind_code;
+    //     }
+    //     if (!empty($game_date)) {
+    //         $url .= "&gameDate=" . $game_date;
+    //     }
+
+    //     $ch = curl_init();
+    //     curl_setopt($ch, CURLOPT_URL, $url);
+    //     curl_setopt($ch, CURLOPT_POST, true);
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    //     //暫時不檢查SSL
+    //     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    //     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+
+    //     $response_data = curl_exec($ch);
+    //     curl_close($ch);
+    //     $response_data = json_decode($response_data, true);
+
+    //     if ($response_data) {
+    //         return new WP_REST_Response($response_data, 200);
+    //     } else {
+    //         return new WP_Error('not_found', 'No stats found', array('status' => 404));
+    //     }
+    // }
+
+
+
     /**
      * 取得球員異動
      *
