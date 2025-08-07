@@ -23,17 +23,16 @@ class Game_Event_Calendar_Shortcode
     //註冊ajax接口
 public function get_cbpl_data()
 {
-    // Ensure the request is an AJAX POST request.
     if (!defined('DOING_AJAX') || !DOING_AJAX || empty($_POST)) {
         wp_send_json_error(['message' => 'Invalid or malformed request.'], 400);
         wp_die();
     }
 
-    // Get the year from the AJAX request, defaulting to the current year.
     $query_year = isset($_POST['year']) ? sanitize_text_field($_POST['year']) : date("Y");
+
     $args = [
         'post_type'      => 'contest_list',
-        'posts_per_page' => -1, // Get all posts
+        'posts_per_page' => -1,
         'post_status'    => 'publish',
         'date_query'     => [
             [
@@ -41,7 +40,7 @@ public function get_cbpl_data()
             ],
         ],
         'orderby'        => 'meta_value',
-        'meta_key'       => 'time', // Order by the ACF time field
+        'meta_key'       => 'time',
         'order'          => 'ASC',
     ];
 
@@ -54,49 +53,44 @@ public function get_cbpl_data()
 
             $post_id = get_the_ID();
             $fields = function_exists('get_fields') ? (get_fields($post_id) ?: []) : [];
-            
-            // Lấy tiêu đề bài viết để phân tích tên đội
+
             $post_title = get_the_title($post_id);
 
-            // Phân tích tên đội từ tiêu đề
             $home_team_name = '';
             $visiting_team_name = '';
-            if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+VS\s+(.+)$/', $post_title, $matches)) {
+
+           if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
                 $visiting_team_name = trim($matches[1]);
                 $home_team_name = trim($matches[2]);
             }
-
-            // Xử lý ngày và giờ
+           
             $game_date = '';
             $game_time = '';
-            $game_day_of_week = ''; // Khai báo biến mới ở đây
+            $game_day_of_week = '';
+
             if (!empty($fields['time'])) {
                 $raw_time_string = $fields['time'];
                 $clean_time_string = preg_replace('/\(\w+\)/u', '', $raw_time_string);
                 $datetime_obj = DateTime::createFromFormat('Y/m/d H:i', $clean_time_string);
+
                 if ($datetime_obj !== false) {
                     $game_date = $datetime_obj->format('Y-m-d');
                     $game_time = $datetime_obj->format('H:i');
-                    // --- CODE MỚI ĐƯỢC THÊM VÀO ---
-                    $days_map = ['(一)', '(二)', '(三)', '(四)', '(五)', '(六)', '(日)'];
-                    $day_index = $datetime_obj->format('N') - 1; // N: 1=Thứ 2, 7=Chủ nhật
+                    $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+                    $day_index = $datetime_obj->format('N') - 1;
                     $game_day_of_week = $days_map[$day_index] ?? '';
-                    // --- KẾT THÚC CODE MỚI ---
                 } else {
                     $datetime_obj_date_only = DateTime::createFromFormat('Y/m/d', $clean_time_string);
                     if ($datetime_obj_date_only !== false) {
                         $game_date = $datetime_obj_date_only->format('Y-m-d');
                         $game_time = '';
-                        // --- CODE MỚI ĐƯỢC THÊM VÀO CHO TRƯỜNG HỢP KHÔNG CÓ GIỜ ---
-                        $days_map = ['(一)', '(二)', '(三)', '(四)', '(五)', '(六)', '(日)'];
+                        $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
                         $day_index = $datetime_obj_date_only->format('N') - 1;
                         $game_day_of_week = $days_map[$day_index] ?? '';
-                        // --- KẾT THÚC CODE MỚI ---
                     }
                 }
             }
-            
-            // Lấy URL hình ảnh của đội
+
             $home_img = '';
             if (!empty($fields['HOME'])) {
                 $home_img = is_array($fields['HOME']) ? ($fields['HOME']['url'] ?? '') : $fields['HOME'];
@@ -106,7 +100,6 @@ public function get_cbpl_data()
                 $away_img = is_array($fields['AWAY']) ? ($fields['AWAY']['url'] ?? '') : $fields['AWAY'];
             }
 
-            // Tính toán sets thắng cho mỗi đội
             $home_sets = 0;
             $away_sets = 0;
             $score_tsg = is_array($fields['Score-tsg'] ?? null) ? $fields['Score-tsg'] : [];
@@ -123,23 +116,22 @@ public function get_cbpl_data()
                     $away_sets++;
                 }
             }
-            
-            // Xác định trạng thái trận đấu
-            $game_result_text = ($home_sets > 0 || $away_sets > 0) ? 'FINAL' : 'VS';
-            
-            // Cài đặt điểm số hiển thị dựa trên trạng thái
-            $display_home_score = ($game_result_text === 'VS') ? '-' : $home_sets;
-            $display_visiting_score = ($game_result_text === 'VS') ? '-' : $away_sets;
 
-            // Định dạng mảng dữ liệu cuối cùng để gửi về frontend.
+            $game_result_text = ($home_sets > 0 || $away_sets > 0) ? 'FINAL' : 'VS';
+
+            $display_home_score = ($game_result_text === 'VS') ? '_' : $home_sets;
+            $display_visiting_score = ($game_result_text === 'VS') ? '_' : $away_sets;
+
             $formatted_data[] = [
                 'GameDate'         => $game_date,
                 'GameDateTimeS'    => $game_time,
                 'GameResult'       => $fields['GameResult'] ?? 0,
                 'GameResultName'   => $fields['GameResultName'] ?? '',
-                'GameSno'          => get_the_ID(),
+                'GameLink' => get_permalink($post_id),
+                // 'GameSno'          => get_the_ID(),
+                'GameSno'          => '_',
                 'GameMonth'        => $datetime_obj ? $datetime_obj->format('Y-m') : '',
-                'DayOfWeek'        => $game_day_of_week, // Thêm trường này vào dữ liệu
+                'DayOfWeek'        => $game_day_of_week,
                 'HomeTeamName'     => $home_team_name,
                 'HomeTeamImg'      => $home_img,
                 'HomeScore'        => $display_home_score,
@@ -156,9 +148,6 @@ public function get_cbpl_data()
     wp_die();
 }
 
-/**
- * Hàm trợ giúp để lấy URL ảnh từ trường ACF.
- */
 private function get_image_url_from_acf($fields, $key)
 {
     if (empty($fields[$key])) {

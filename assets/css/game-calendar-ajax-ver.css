@@ -266,6 +266,16 @@
     object-fit: contain;
 }
 
+.game-info-cell {
+    position: relative;
+    z-index: 10;
+    cursor: pointer; 
+}
+
+.game-info-cell * {
+    pointer-events: none;
+}
+
 @media (max-width:1023px) {
     .calendar-table-view {
         display: none;
