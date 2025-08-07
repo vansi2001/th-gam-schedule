@@ -226,7 +226,7 @@ class Game_Event_Recently_Shortcode
                 'GameResultName'    => $result_data['GameStatus'],
                 'GameResult'        => $result_data['HomeSetsWon'] . '-' . $result_data['AwaySetsWon'],
                 'GameToday'         => $istoday,
-                'post_url' => get_permalink($posts->ID),
+                'post_url' => get_permalink($post->ID),
             ];
 
             if ($datetime <= $today) {

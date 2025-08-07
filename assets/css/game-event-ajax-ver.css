@@ -64,7 +64,9 @@
     height: 231px;
     border-radius: 10px;
     padding: 20px 10px;
-    background-color: #f4f4f4;
+    /* background-color: #f4f4f4; */
+            background-color: rgba(0, 255, 255, 0.087);
+
     cursor: pointer;
 }
 
@@ -121,13 +123,13 @@
     font-size: 16px;
     font-weight: 500;
     color: #FFFFFF;
-    background-color: #08453A;
+    background-color: #0de7f7;
 }
 
 .th-game-recently .game-score-text {
     font-size: 32px;
     font-weight: 500;
-    color: #08453A;
+    color: #0de7f7;
     white-space: nowrap;
 }
 
@@ -192,6 +194,7 @@
     .th-game-recently .th-game-card {
         padding: 10px 10px;
         height: 210px;
+        background-color: rgba(0, 255, 255, 0.087);
     }
 
     .th-game-recently .th-game-info {
@@ -218,6 +221,8 @@
     .th-game-recently .th-game-card {
         min-width: 99%;
         margin: 0px 5px;
+                background-color: rgba(0, 255, 255, 0.087);
+
     }
 
     .th-game-recently .th-game-logo img {

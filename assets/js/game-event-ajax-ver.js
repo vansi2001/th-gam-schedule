@@ -21,7 +21,9 @@ jQuery(function ($) {
       let thGameToday = element.GameToday === "T" ? "th-game-today" : "";
       cpblGameLink[
         key
-      ] = `https://www.cpbl.com.tw/box/index?gameSno=${element.GameSno}&year=${RECENTLY_PHP_DATA["year"]}&kindCode=${RECENTLY_PHP_DATA["game_type"]}`;
+      ]= cpblGameLink[key] = element.post_url;
+    //   ] = `https://www.cpbl.com.tw/box/index?gameSno=${element.GameSno}&year=${RECENTLY_PHP_DATA["year"]}&kindCode=${RECENTLY_PHP_DATA["game_type"]}`;
+   
       gameCardHtml += `
         <div class="th-game-card th-game-bg ${thGameToday}" data-scroll="${key}">
           <div class="th-game-info">
@@ -222,11 +224,12 @@ jQuery(function ($) {
               .attr("data-scroll");
           }
           if (linkIndex.length > 0)
-            window.open(
-              cpblGameLink[linkIndex],
-              "_blank",
-              "noopener, noreferrer"
-            );
+            if (linkIndex.length > 0)
+            window.location.href = cpblGameLink[linkIndex];
+            // window.open(
+            //   cpblGameLink[linkIndex],
+            //   "noopener, noreferrer"
+            // );
         }
       });
 
@@ -261,11 +264,13 @@ jQuery(function ($) {
               .attr("data-scroll");
           }
           if (linkIndex.length > 0)
-            window.open(
-              cpblGameLink[linkIndex],
-              "_blank",
-              "noopener, noreferrer"
-            );
+            if (linkIndex.length > 0)
+            window.location.href = cpblGameLink[linkIndex];
+            // window.open(
+            //   cpblGameLink[linkIndex],
+            //   "_blank",
+            //   "noopener, noreferrer"
+            // );
         }
       });
     });
