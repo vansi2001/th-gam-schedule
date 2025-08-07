@@ -233,6 +233,23 @@ class Th_Game_Api
                     'HomeSetScore'     => (int)($score_tsg[$set_key] ?? 0),
                 ];
             }
+            $w=$this->get_chinese_weekday($datetime);
+            $weekdays = 7;
+
+            if ($w === '一') {
+                $weekdays = 1;
+            } elseif ($w === '二') {
+                $weekdays = 2;
+            } elseif ($w === '三') {
+                $weekdays = 3;
+            } elseif ($w === '四') {
+                $weekdays = 4;
+            } elseif ($w === '五') {
+                $weekdays = 5;
+            } elseif  ($w === '六') {
+                $weekdays = 6;
+            } 
+
             $result_data = $this->evaluate_volleyball_game_result($score_tsg, $score_opp, $timeS);
             $response[] = [
                 'Seq'                    => (string)($i + 1),
@@ -242,7 +259,7 @@ class Th_Game_Api
                 'GameDateTimeS'          => $timeS ?: '',
                 'GameDateTimeE'          => null,
                 'GameDuringTime'         => null,
-                'week'                  => date('w', $datetime) ?: '-',
+                'week'                  => $weekdays,
                 // 'MultyGame'              => '-',
                 'Year'                   => $game_year,
                 // 'KindCode'               => '-',
@@ -289,7 +306,11 @@ class Th_Game_Api
             'ResponseDto' => $response
         ], 200);
     }
-
+    // chinese weekday helper function - 中文星期幫助函數
+    function get_chinese_weekday($timestamp) {
+        $weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+        return $weekdays[date('w', $timestamp)];
+    }
     // Hàm helper đã được cập nhật để nhận tham số $year - helper function updated to accept $year parameter
     // Chuyển đổi định dạng ngày giờ sang ISO 8601 - 將日期時間轉換為 ISO 8601 格式
     private function convert_to_iso_datetime($input, $default_year) {

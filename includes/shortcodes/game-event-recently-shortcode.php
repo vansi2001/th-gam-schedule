@@ -225,7 +225,8 @@ class Game_Event_Recently_Shortcode
                 'VisitingScore'     => $result_data['AwaySetsWon'],
                 'GameResultName'    => $result_data['GameStatus'],
                 'GameResult'        => $result_data['HomeSetsWon'] . '-' . $result_data['AwaySetsWon'],
-                'GameToday'         => $istoday
+                'GameToday'         => $istoday,
+                'post_url' => get_permalink($posts->ID),
             ];
 
             if ($datetime <= $today) {
