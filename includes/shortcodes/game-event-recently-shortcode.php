@@ -182,15 +182,14 @@ class Game_Event_Recently_Shortcode
             $raw_time = $f['time'] ?? '';
             if (!$raw_time || strpos($raw_time, $search_pattern) !== 0) continue;
 
-            $timeS = $this->convert_to_iso_datetime($raw_time, $query_year);
+            $timeS = $this->convert_to_iso_datetime($raw_time, $query_year); //out put : 2025-08-01T18:00:00
             $datetime = $timeS ? strtotime($timeS) : false;
             if (!$datetime) continue;
 
             $score_tsg = get_field('Score-tsg', $id) ?: [];
             $score_opp = get_field('Score', $id) ?: [];
 
-            $home_team = '';
-            $visiting_team = '';
+
             $title = $post->post_title;
             if (preg_match('/\d{1,2}\/\d{1,2}\s+(.*?)\s+VS\s+(.*)/ui', $title, $matches)) {
                 $home_team = trim($matches[1]);
