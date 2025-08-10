@@ -47,7 +47,7 @@
 }
 
 .display-tabs>button.calendar-tab-active {
-    background-color: #88B9E2 !important;
+    background-color: #0079C0 !important;
     color: #fff !important;
 }
 
@@ -60,7 +60,7 @@
 }
 
 .game-calendar-table>thead {
-    background-color: #88B9E2;
+    background-color: #0079C0;
     color: #fff;
     font-size: 16px;
 }
@@ -190,7 +190,7 @@
 
 .calendar-list-date {
     padding: 10px;
-    background-color: #88B9E2;
+    background-color: #0079C0;
     color: #fff;
     border-bottom: 1px solid #cfcfda;
     font-size: 16px;
@@ -221,7 +221,7 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: #88B9E2;
+    background-color: #0079C0;
     margin: 0px 10px;
 }
 
@@ -264,6 +264,9 @@
 .calendar-loading {
     max-height: 100%;
     object-fit: contain;
+}
+.game-postponed-text{
+  color: #ff5d5d;  
 }
 
 @media (max-width:1023px) {

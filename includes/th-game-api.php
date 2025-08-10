@@ -198,19 +198,23 @@ class Th_Game_Api
 
             $timeS = $this->convert_to_iso_datetime($raw_time, $query_year);
             $datetime = $timeS ? strtotime($timeS) : false;
+            $week_from_time = $this->extract_weekday($raw_time);
 
-            // ... (Phần xử lý dữ liệu còn lại giống như phiên bản trước) ...
+        // ... (Phần xử lý dữ liệu còn lại giống như phiên bản trước) ...
             $score_tsg = get_field('Score-tsg', $id) ?: [];
             $score_opp = get_field('Score', $id) ?: [];
 
+        // GET team names from post title
             $home_team = '';
             $visiting_team = '';
             $title = $post->post_title;
             if (preg_match('/\d{1,2}\/\d{1,2}\s+(.*?)\s+VS\s+(.*)/ui', $title, $matches)) {
-                $home_team = trim($matches[1]);
-                $visiting_team = trim($matches[2]);
+                $home_team = trim($matches[2]);
+                $visiting_team = trim($matches[1]);
             }
 
+        // Get team images from ACF fields
+        // auto by ACF fields
             $home_img = $f['HOME'] ?? '';
             if (is_array($home_img) && isset($home_img['url'])) {
                 $home_img = $home_img['url'];
@@ -219,52 +223,60 @@ class Th_Game_Api
             if (is_array($away_img) && isset($away_img['url'])) {
                 $away_img = $away_img['url'];
             }
+        // Determine if 天鷹 is home or away
+            $tsg_is_home = $f['team'] ?? ''; // 'Home' or 'Away'
+
+            if ($tsg_is_home === 'AWAY') {
+                // 天鷹是客場
+                
+                $home_score_totol = (int)($score_opp['total'] ?? 0);
+                $visiting_score_totol = (int)($score_tsg['total'] ?? 0);
+                $sets = [];
+                foreach (['1st', '2nd', '3rd', '4th', '5th'] as $set_key) {
+                    $sets[] = [
+                        'SetNumber'        => str_replace(['st', 'nd', 'rd', 'th'], '', $set_key),
+                        'VisitingSetScore' => (int)($score_tsg[$set_key] ?? 0),
+                        'HomeSetScore'     => (int)($score_opp[$set_key] ?? 0)
+                    ];
+                }
+            } else {
+                // 天鷹是主場                
+                $home_score_totol = (int)($score_tsg['total'] ?? 0);
+                $visiting_score_totol = (int)($score_opp['total'] ?? 0);
+                $sets = [];
+                foreach (['1st', '2nd', '3rd', '4th', '5th'] as $set_key) {
+                    $sets[] = [
+                        'SetNumber'        => str_replace(['st', 'nd', 'rd', 'th'], '', $set_key),
+                        'VisitingSetScore' => (int)($score_opp[$set_key] ?? 0),
+                        'HomeSetScore'     => (int)($score_tsg[$set_key] ?? 0),
+                    ];
+                }
+            }
+
+            // Time and date formatting
             $game_date_formatted = $datetime ? date('Y-m-d', $datetime) : '-';
             $game_month = $datetime ? date('m', $datetime) : '-';
             $game_day = $datetime ? date('d', $datetime) : '-';
             $game_year = $datetime ? date('Y', $datetime) : '';
-            $home_total = (int) ($score_tsg['total'] ?? 0);
-            $away_total = (int) ($score_opp['total'] ?? 0);
-            $sets = [];
-            foreach (['1st', '2nd', '3rd', '4th', '5th'] as $set_key) {
-                $sets[] = [
-                    'SetNumber'        => str_replace(['st', 'nd', 'rd', 'th'], '', $set_key),
-                    'VisitingSetScore' => (int)($score_opp[$set_key] ?? 0),
-                    'HomeSetScore'     => (int)($score_tsg[$set_key] ?? 0),
-                ];
-            }
-            $w=$this->get_chinese_weekday($datetime);
-            $weekdays = 7;
 
-            if ($w === '一') {
-                $weekdays = 1;
-            } elseif ($w === '二') {
-                $weekdays = 2;
-            } elseif ($w === '三') {
-                $weekdays = 3;
-            } elseif ($w === '四') {
-                $weekdays = 4;
-            } elseif ($w === '五') {
-                $weekdays = 5;
-            } elseif  ($w === '六') {
-                $weekdays = 6;
-            } 
+            $GameSno = $f['gamesNo'] ?? '-';
+            $game_staus_default = $f['gameStatus']; // 9: VS 未開始, 0: 結束, 1: 延期, 2: 保留, 3: 比賽中, 4 : 取消
+            $weekdays = date('N', $datetime); // 1 (Thứ Hai) tới 7 (Chủ nhật)
 
-            $result_data = $this->evaluate_volleyball_game_result($score_tsg, $score_opp, $timeS);
+            $result_data = $this->evaluate_volleyball_game_result($score_tsg, $score_opp, $timeS,$tsg_is_home);
+
             $response[] = [
                 'Seq'                    => (string)($i + 1),
                 'Game_title'             => $post->post_title,
-                'PresentStatus'          => $result_data['GameStatus'],
-                'IsGameStop'             => $result_data['GameIsStop'] ?? false,
+                'PresentStatus'          => $game_staus_default?$result_data['GameStatus'] : 9, // 9: 未開始, 0: 結束, 1: 延期, 2: 保留, 3: 比賽中, 4 : 取消
                 'GameDateTimeS'          => $timeS ?: '',
                 'GameDateTimeE'          => null,
                 'GameDuringTime'         => null,
-                'week'                  => $weekdays,
-                // 'MultyGame'              => '-',
+                'GameWeekday'            => $week_from_time?$week_from_time: $weekdays, // 1 (Thứ Hai) tới 7 (Chủ nhật)
                 'Year'                   => $game_year,
                 // 'KindCode'               => '-',
                 // 'GameSeasonCode'         => '-',
-                'GameSno'                => '-',
+                'GameSno'                => $GameSno,
                 // 'UpdateTime'             => current_time('mysql'),
                 'GameDate'               => $game_date_formatted,
                 'GameDateMonth'          => $game_month,
@@ -315,7 +327,7 @@ class Th_Game_Api
     // Chuyển đổi định dạng ngày giờ sang ISO 8601 - 將日期時間轉換為 ISO 8601 格式
     private function convert_to_iso_datetime($input, $default_year) {
         // Regex sẽ khớp với cả chuỗi có năm và không có năm - 正規表達式將匹配包含年份和不包含年份的字符串
-        if (preg_match('/^(?:(\d{4})\/)?(\d{1,2})\/(\d{1,2})[\(（][^\]\)]+[\)）]\s+(\d{1,2}):(\d{2})$/u', $input, $matches)) {
+        if (preg_match('/^(?:(\d{4})\/)?(\d{1,2})\/(\d{1,2})\s*\([^\)]+\)\s*(\d{1,2}):(\d{2})$/u', $input, $matches)) {
             // Nếu chuỗi có năm, lấy năm đó. Ngược lại, dùng năm mặc định.
             // 如果字符串包含年份，則使用該年份，否則使用默認年份。
             $year  = !empty($matches[1]) ? $matches[1] : $default_year;
@@ -372,32 +384,43 @@ class Th_Game_Api
             update_field('time', $new_time_value, $post_id);
         }
     }
-    private function evaluate_volleyball_game_result($score_tsg, $score_opp, $iso_time) {
-        $now = new DateTime('now', new DateTimeZone('Asia/Taipei')); //output: '2023-10-01T12:00:00+08:00'
-        $game_time = !empty($iso_time) ? new DateTime($iso_time) : null; // output: '2023-10-01T12:00:00+08:00'
+    private function evaluate_volleyball_game_result($score_tsg, $score_opp, $iso_time, $tsg_is_home) {
+        $now = new DateTime('now', new DateTimeZone('Asia/Taipei'));
+        $game_time = !empty($iso_time) ? new DateTime($iso_time) : null;
+
         $home_sets_won = 0;
         $away_sets_won = 0;
         $sets_played = 0;
         $is_ongoing = false;
         $sets = ['1st', '2nd', '3rd', '4th', '5th'];
 
-        foreach ($sets as $index => $set_key) {
-            $tsg_score = (int)($score_tsg[$set_key] ?? 0);
-            $opp_score = (int)($score_opp[$set_key] ?? 0);
+        // Nếu Score-tsg là đội khách thì hoán đổi điểm để tính đúng
+        if ($tsg_is_home === 'AWAY') {
+            // Hoán đổi biến cho dễ tính
+            $score_home = $score_opp;
+            $score_away = $score_tsg;
+        } else {
+            $score_home = $score_tsg;
+            $score_away = $score_opp;
+        }
 
-            if ($tsg_score === 0 && $opp_score === 0) {
+        foreach ($sets as $index => $set_key) {
+            $home_score = (int)($score_home[$set_key] ?? 0);
+            $away_score = (int)($score_away[$set_key] ?? 0);
+
+            if ($home_score === 0 && $away_score === 0) {
                 if ($sets_played > 0) {
                     $is_ongoing = true;
                 }
                 continue;
             }
-            
+
             $sets_played++;
             $win_score = ($index < 4) ? 25 : 15;
-            $score_difference = abs($tsg_score - $opp_score);
+            $score_difference = abs($home_score - $away_score);
 
-            if (($tsg_score >= $win_score && $score_difference >= 2) || ($opp_score >= $win_score && $score_difference >= 2)) {
-                if ($tsg_score > $opp_score) {
+            if (($home_score >= $win_score && $score_difference >= 2) || ($away_score >= $win_score && $score_difference >= 2)) {
+                if ($home_score > $away_score) {
                     $home_sets_won++;
                 } else {
                     $away_sets_won++;
@@ -407,28 +430,25 @@ class Th_Game_Api
             }
         }
 
-        $game_status = 9; // 未開始 - 未開始  
-        $game_is_stop = false; // 默認為 false - 默認為 false
+        $game_status_by_score = 9; // 未開始
 
         if ($home_sets_won >= 3 || $away_sets_won >= 3) {
-            $game_status = 0; // Kết thúc - 結束
+            $game_status_by_score = 0; // 結束
         } elseif ($is_ongoing || $sets_played > 0) {
             if ($game_time !== null && strtotime($now->format('Y-m-d')) > strtotime($game_time->format('Y-m-d'))) {
-             $game_status = 2;   // 保留 s
-                $game_is_stop = true; // 暫停比賽 - 暫停比賽
-            } else{
-                $game_status = 3; // 比賽中 
-            }  
+                $game_status_by_score = 2; // 保留
+            } else {
+                $game_status_by_score = 3; // 比賽中
+            }
         } elseif ($game_time !== null && $now > $game_time) {
-            $game_status = 1; // Hoãn - 延期
-            $game_is_stop = true;
-        } 
+            $game_status_by_score = 1; // 延期
+        }
 
         $winning_team = '-';
         $losing_team = '-';
         $game_result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
 
-        if ($game_status === 0) {
+        if ($game_status_by_score === 0) {
             if ($home_sets_won > $away_sets_won) {
                 $winning_team = 'HOME';
                 $losing_team = 'AWAY';
@@ -440,16 +460,28 @@ class Th_Game_Api
         }
 
         return [
-            'GameStatus' => $game_status, // 0: 結束, 1: 延期, 2: 保留, 9: 未開始, 3: 比賽中
-            'GameIsStop' => isset($game_is_stop) ? $game_is_stop : false, // true: 暫停, false: 進行中
-            'GameResultName' => $game_result_name, // 結果名稱 -win teamName
-            'HomeSetsWon' => $home_sets_won, // 主隊贏得的局數
+            'GameStatus' => $game_status_by_score,
+            'GameResultName' => $game_result_name,
+            'HomeSetsWon' => $home_sets_won,
             'AwaySetsWon' => $away_sets_won,
             'WinningTeam' => $winning_team,
             'LosingTeam' => $losing_team,
         ];
+        
     }
 
+    private function extract_weekday($input) {
+        if (preg_match('/\(([^)]+)\)/', $input, $matches)) {
+            $weekday = trim($matches[1]);
+            $map = [
+                '日' => 7, '一' => 1, '二' => 2, '三' => 3, '四' => 4, '五' => 5, '六' => 6,
+                'sun' => 7, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6,
+            ];
+            $key = strtolower($weekday);
+            return $map[$key] ?? null;
+        }
+        return null;
+    }
 
 
     // This í old function, not used now

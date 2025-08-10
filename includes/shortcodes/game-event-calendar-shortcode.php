@@ -22,132 +22,332 @@ class Game_Event_Calendar_Shortcode
     
     // add new function 
     //註冊ajax接口
-    public function get_cbpl_data()
-    {
-        if (!defined('DOING_AJAX') || !DOING_AJAX || empty($_POST)) {
-            wp_send_json_error(['message' => 'Invalid or malformed request.'], 400);
-            wp_die();
-        }
+    // public function get_cbpl_data()
+    // {
+    //     if (!defined('DOING_AJAX') || !DOING_AJAX || empty($_POST)) {
+    //         wp_send_json_error(['message' => 'Invalid or malformed request.'], 400);
+    //         wp_die();
+    //     }
 
-        $query_year = isset($_POST['year']) ? sanitize_text_field($_POST['year']) : date("Y");
+    //     $query_year = isset($_POST['year']) ? sanitize_text_field($_POST['year']) : date("Y");
 
-        $args = [
-            'post_type'      => 'contest_list',
-            'posts_per_page' => -1,
-            'post_status'    => 'publish',
-            'date_query'     => [
-                [
-                    'year' => (int) $query_year,
-                ],
-            ],
-            'orderby'        => 'meta_value',
-            'meta_key'       => 'time',
-            'order'          => 'ASC',
-        ];
+    //     $args = [
+    //         'post_type'      => 'contest_list',
+    //         'posts_per_page' => -1,
+    //         'post_status'    => 'publish',
+    //         'date_query'     => [
+    //             [
+    //                 'year' => (int) $query_year,
+    //             ],
+    //         ],
+    //         'orderby'        => 'meta_value',
+    //         'meta_key'       => 'time',
+    //         'order'          => 'ASC',
+    //     ];
 
-        $query = new \WP_Query($args);
-        $formatted_data = [];
+    //     $query = new \WP_Query($args);
+    //     $formatted_data = [];
 
-        if ($query->have_posts()) {
-            while ($query->have_posts()) {
-                $query->the_post();
+    //     if ($query->have_posts()) {
+    //         while ($query->have_posts()) {
+    //             $query->the_post();
 
-                $post_id = get_the_ID();
-                $fields = function_exists('get_fields') ? (get_fields($post_id) ?: []) : [];
+    //             $post_id = get_the_ID();
+    //             $fields = function_exists('get_fields') ? (get_fields($post_id) ?: []) : [];
 
-                $post_title = get_the_title($post_id);
+    //             $post_title = get_the_title($post_id);
 
-                $home_team_name = '';
-                $visiting_team_name = '';
+    //             $home_team_name = '';
+    //             $visiting_team_name = '';
 
-            if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
-                    $visiting_team_name = trim($matches[1]);
-                    $home_team_name = trim($matches[2]);
-                }
+    //         if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
+    //                 $visiting_team_name = trim($matches[1]);
+    //                 $home_team_name = trim($matches[2]);
+    //             }
             
-                $game_date = '';
-                $game_time = '';
-                $game_day_of_week = '';
+    //             $game_date = '';
+    //             $game_time = '';
+    //             $game_day_of_week = '';
 
-                if (!empty($fields['time'])) {
-                    $raw_time_string = $fields['time'];
-                    $clean_time_string = preg_replace('/\(\w+\)/u', '', $raw_time_string);
-                    $datetime_obj = DateTime::createFromFormat('Y/m/d H:i', $clean_time_string);
+    //             if (!empty($fields['time'])) {
+    //                 $raw_time_string = $fields['time'];
+    //                 $clean_time_string = preg_replace('/\(\w+\)/u', '', $raw_time_string);
+    //                 $datetime_obj = DateTime::createFromFormat('Y/m/d H:i', $clean_time_string);
 
-                    if ($datetime_obj !== false) {
-                        $game_date = $datetime_obj->format('Y-m-d');
-                        $game_time = $datetime_obj->format('H:i');
-                        $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-                        $day_index = $datetime_obj->format('N') - 1;
-                        $game_day_of_week = $days_map[$day_index] ?? '';
-                    } else {
-                        $datetime_obj_date_only = DateTime::createFromFormat('Y/m/d', $clean_time_string);
-                        if ($datetime_obj_date_only !== false) {
-                            $game_date = $datetime_obj_date_only->format('Y-m-d');
-                            $game_time = '';
-                            $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-                            $day_index = $datetime_obj_date_only->format('N') - 1;
-                            $game_day_of_week = $days_map[$day_index] ?? '';
-                        }
-                    }
-                }
+    //                 if ($datetime_obj !== false) {
+    //                     $game_date = $datetime_obj->format('Y-m-d');
+    //                     $game_time = $datetime_obj->format('H:i');
+    //                     $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    //                     $day_index = $datetime_obj->format('N') - 1;
+    //                     $game_day_of_week = $days_map[$day_index] ?? '';
+    //                 } else {
+    //                     $datetime_obj_date_only = DateTime::createFromFormat('Y/m/d', $clean_time_string);
+    //                     if ($datetime_obj_date_only !== false) {
+    //                         $game_date = $datetime_obj_date_only->format('Y-m-d');
+    //                         $game_time = '';
+    //                         $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    //                         $day_index = $datetime_obj_date_only->format('N') - 1;
+    //                         $game_day_of_week = $days_map[$day_index] ?? '';
+    //                     }
+    //                 }
+    //             }
 
-                $home_img = '';
-                if (!empty($fields['HOME'])) {
-                    $home_img = is_array($fields['HOME']) ? ($fields['HOME']['url'] ?? '') : $fields['HOME'];
-                }
-                $away_img = '';
-                if (!empty($fields['AWAY'])) {
-                    $away_img = is_array($fields['AWAY']) ? ($fields['AWAY']['url'] ?? '') : $fields['AWAY'];
-                }
+    //             $home_img = '';
+    //             if (!empty($fields['HOME'])) {
+    //                 $home_img = is_array($fields['HOME']) ? ($fields['HOME']['url'] ?? '') : $fields['HOME'];
+    //             }
+    //             $away_img = '';
+    //             if (!empty($fields['AWAY'])) {
+    //                 $away_img = is_array($fields['AWAY']) ? ($fields['AWAY']['url'] ?? '') : $fields['AWAY'];
+    //             }
 
-                $home_sets = 0;
-                $away_sets = 0;
-                $score_tsg = is_array($fields['Score-tsg'] ?? null) ? $fields['Score-tsg'] : [];
-                $score_opp = is_array($fields['Score'] ?? null) ? $fields['Score'] : [];
-                $all_keys = array_unique(array_merge(array_keys($score_tsg), array_keys($score_opp)));
-                natsort($all_keys);
-                foreach ($all_keys as $key) {
-                    if ($home_sets === 3 || $away_sets === 3) break;
-                    $h = (int) ($score_tsg[$key] ?? 0);
-                    $a = (int) ($score_opp[$key] ?? 0);
-                    if ($h > $a) {
-                        $home_sets++;
-                    } elseif ($a > $h) {
-                        $away_sets++;
-                    }
-                }
+    //             $home_sets = 0;
+    //             $away_sets = 0;
+    //             $score_tsg = is_array($fields['Score-tsg'] ?? null) ? $fields['Score-tsg'] : [];
+    //             $score_opp = is_array($fields['Score'] ?? null) ? $fields['Score'] : [];
+    //             $all_keys = array_unique(array_merge(array_keys($score_tsg), array_keys($score_opp)));
+    //             natsort($all_keys);
+    //             foreach ($all_keys as $key) {
+    //                 if ($home_sets === 3 || $away_sets === 3) break;
+    //                 $h = (int) ($score_tsg[$key] ?? 0);
+    //                 $a = (int) ($score_opp[$key] ?? 0);
+    //                 if ($h > $a) {
+    //                     $home_sets++;
+    //                 } elseif ($a > $h) {
+    //                     $away_sets++;
+    //                 }
+    //             }
 
-                $game_result_text = ($home_sets > 0 || $away_sets > 0) ? 'FINAL' : 'VS';
+    //             $game_result_text = ($home_sets > 0 || $away_sets > 0) ? 'FINAL' : 'VS';
 
-                $display_home_score = ($game_result_text === 'VS') ? '_' : $home_sets;
-                $display_visiting_score = ($game_result_text === 'VS') ? '_' : $away_sets;
+    //             $display_home_score = ($game_result_text === 'VS') ? '_' : $home_sets;
+    //             $display_visiting_score = ($game_result_text === 'VS') ? '_' : $away_sets;
 
-                $formatted_data[] = [
-                    'GameDate'         => $game_date,
-                    'GameDateTimeS'    => $game_time,
-                    'GameResult'       => $fields['GameResult'] ?? 0,
-                    'GameResultName'   => $fields['GameResultName'] ?? '',
-                    'GameLink' => get_permalink($post_id),
-                    // 'GameSno'          => get_the_ID(),
-                    'GameSno'          => '_',
-                    'GameMonth'        => $datetime_obj ? $datetime_obj->format('Y-m') : '',
-                    'GameWeek'        => $game_day_of_week,
-                    'HomeTeamName'     => $home_team_name,
-                    'HomeTeamImg'      => $home_img,
-                    'HomeScore'        => $display_home_score,
-                    'VisitingTeamName' => $visiting_team_name,
-                    'VisitingTeamImg'  => $away_img,
-                    'VisitingScore'    => $display_visiting_score,
-                    'FieldAbbe'        => is_array($fields['location'] ?? '') ? ($fields['location']['name'] ?? '') : ($fields['location'] ?? ''),
-                    'GameResultText'   => $game_result_text,
-                ];
-            }
-            wp_reset_postdata();
-        }
-        wp_send_json($formatted_data);
+    //             $formatted_data[] = [
+    //                 'GameDate'         => $game_date,
+    //                 'GameDateTimeS'    => $game_time,
+    //                 'GameResult'       => $fields['GameResult'] ?? 0,
+    //                 'GameResultName'   => $fields['GameResultName'] ?? '',
+    //                 'GameLink' => get_permalink($post_id),
+    //                 // 'GameSno'          => get_the_ID(),
+    //                 'GameSno'          => '_',
+    //                 'GameMonth'        => $datetime_obj ? $datetime_obj->format('Y-m') : '',
+    //                 'GameWeek'        => $game_day_of_week,
+    //                 'HomeTeamName'     => $home_team_name,
+    //                 'HomeTeamImg'      => $home_img,
+    //                 'HomeScore'        => $display_home_score,
+    //                 'VisitingTeamName' => $visiting_team_name,
+    //                 'VisitingTeamImg'  => $away_img,
+    //                 'VisitingScore'    => $display_visiting_score,
+    //                 'FieldAbbe'        => is_array($fields['location'] ?? '') ? ($fields['location']['name'] ?? '') : ($fields['location'] ?? ''),
+    //                 'GameResultText'   => $game_result_text,
+    //             ];
+    //         }
+    //         wp_reset_postdata();
+    //     }
+    //     wp_send_json($formatted_data);
+    //     wp_die();
+    // }
+    public function get_cbpl_data()
+{
+    if (!defined('DOING_AJAX') || !DOING_AJAX || empty($_POST)) {
+        wp_send_json_error(['message' => 'Invalid or malformed request.'], 400);
         wp_die();
     }
+
+    $query_year = isset($_POST['year']) ? sanitize_text_field($_POST['year']) : date("Y");
+
+    $args = [
+        'post_type'      => 'contest_list',
+        'posts_per_page' => -1,
+        'post_status'    => 'publish',
+        'date_query'     => [
+            [
+                'year' => (int) $query_year,
+            ],
+        ],
+        'orderby'        => 'meta_value',
+        'meta_key'       => 'time',
+        'order'          => 'ASC',
+    ];
+
+    $query = new \WP_Query($args);
+    $formatted_data = [];
+
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
+
+            $post_id = get_the_ID();
+            $fields = function_exists('get_fields') ? (get_fields($post_id) ?: []) : [];
+
+            $post_title = get_the_title($post_id);
+
+            $home_team_name = '';
+            $visiting_team_name = '';
+
+            if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
+                $visiting_team_name = trim($matches[1]);
+                $home_team_name = trim($matches[2]);
+            }
+            
+            $game_date = '';
+            $game_time_string = '';
+            $game_day_of_week = '';
+            $datetime_obj = null;
+            $now = new DateTime();
+
+            if (!empty($fields['time'])) {
+                $raw_time_string = $fields['time'];
+                $clean_time_string = preg_replace('/\(\w+\)/u', '', $raw_time_string);
+                $datetime_obj = DateTime::createFromFormat('Y/m/d H:i', $clean_time_string);
+
+                if ($datetime_obj !== false) {
+                    $game_date = $datetime_obj->format('Y-m-d');
+                    $game_time_string = $datetime_obj->format('H:i');
+                    $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+                    $day_index = $datetime_obj->format('N') - 1;
+                    $game_day_of_week = $days_map[$day_index] ?? '';
+                } else {
+                    $datetime_obj_date_only = DateTime::createFromFormat('Y/m/d', $clean_time_string);
+                    if ($datetime_obj_date_only !== false) {
+                        $game_date = $datetime_obj_date_only->format('Y-m-d');
+                        $game_time_string = '';
+                        $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+                        $day_index = $datetime_obj_date_only->format('N') - 1;
+                        $game_day_of_week = $days_map[$day_index] ?? '';
+                    }
+                }
+            }
+
+            $home_img = '';
+            if (!empty($fields['HOME'])) {
+                $home_img = is_array($fields['HOME']) ? ($fields['HOME']['url'] ?? '') : $fields['HOME'];
+            }
+            $away_img = '';
+            if (!empty($fields['AWAY'])) {
+                $away_img = is_array($fields['AWAY']) ? ($fields['AWAY']['url'] ?? '') : $fields['AWAY'];
+            }
+
+            $home_sets_won = 0;
+            $away_sets_won = 0;
+            $sets_played = 0;
+            $is_ongoing = false;
+            $score_tsg = is_array($fields['Score-tsg'] ?? null) ? $fields['Score-tsg'] : [];
+            $score_opp = is_array($fields['Score'] ?? null) ? $fields['Score'] : [];
+            $sets = ['1st', '2nd', '3rd', '4th', '5th'];
+
+            foreach ($sets as $index => $set_key) {
+                $tsg_score = (int)($score_tsg[$set_key] ?? 0);
+                $opp_score = (int)($score_opp[$set_key] ?? 0);
+
+                if ($tsg_score === 0 && $opp_score === 0) {
+                    if ($sets_played > 0) {
+                        $is_ongoing = true;
+                    }
+                    continue;
+                }
+                
+                $sets_played++;
+                $win_score = ($index < 4) ? 25 : 15;
+                $score_difference = abs($tsg_score - $opp_score);
+
+                if (($tsg_score >= $win_score && $score_difference >= 2) || ($opp_score >= $win_score && $score_difference >= 2)) {
+                    if ($tsg_score > $opp_score) {
+                        $home_sets_won++;
+                    } else {
+                        $away_sets_won++;
+                    }
+                } else {
+                    $is_ongoing = true;
+                }
+            }
+            
+            $game_status = 9;
+            $game_is_stop = false;
+            $sets_played = $home_sets_won + $away_sets_won;
+
+            if ($home_sets_won >= 3 || $away_sets_won >= 3) {
+                $game_status = 0; // Kết thúc
+            } elseif ($sets_played > 0) {
+                $game_status = 2; // Đang diễn ra/Tạm dừng
+            } elseif ($datetime_obj && $now > $datetime_obj) {
+                $game_status = 1; // Hoãn
+                $game_is_stop = true;
+            } else {
+                $game_status = 9; // Chưa đấu
+            }
+
+            $winning_team = '-';
+            $losing_team = '-';
+            $game_result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
+
+            if ($game_status === 0) {
+                if ($home_sets_won > $away_sets_won) {
+                    $winning_team = 'HOME';
+                    $losing_team = 'AWAY';
+                } else {
+                    $winning_team = 'AWAY';
+                    $losing_team = 'HOME';
+                }
+                $game_result_name = "{$winning_team} WIN";
+            }
+            // --- KẾT THÚC LOGIC TRẠNG THÁI MỚI ---
+
+            // Cập nhật giá trị hiển thị dựa trên trạng thái
+            $display_home_score = ($game_status === 9 || $game_status === 1) ? 0 : $home_sets_won;
+            $display_visiting_score = ($game_status === 9 || $game_status === 1) ? 0 : $away_sets_won;
+            // Khởi tạo mặc định
+            $game_result_text = 'VS';
+            $display_home_score = '-';
+            $display_visiting_score = '-';
+            $today = date('Y-m-d');
+           if ($game_status === 0) {
+                $game_result_text = 'FINAL';
+                $display_home_score = $home_sets_won;
+                $display_visiting_score = $away_sets_won;
+            } elseif ($game_status === 2) {
+                $game_result_text = '<span class="game-postponed-text">保留</span>';
+                $display_home_score = $home_sets_won;
+                $display_visiting_score = $away_sets_won;
+            } elseif ($game_status === 1) {
+                $game_time_string = '<span class="game-postponed-text">延賽</span>';
+                $display_home_score = 0;
+                $display_visiting_score = 0;
+            } elseif ($game_status === 9) {
+                $game_result_text = 'VS';
+                $display_home_score = '_';
+                $display_visiting_score = '_';
+            }
+
+                $formatted_data[] = [
+                'GameDate' => $game_date,
+                'GameDateTimeS' => $game_time_string,
+                'GameResult' => $fields['GameResult'] ?? 0,
+                'GameResultName' => $game_result_name,
+                'GameLink' => get_permalink($post_id),
+                // 'GameSno' => get_the_ID(),
+                'GameSno' => '_',
+                'GameMonth' => $datetime_obj ? $datetime_obj->format('Y-m') : '',
+                'GameWeek' => $game_day_of_week,
+                'HomeTeamName' => $home_team_name,
+                'HomeTeamImg' => $home_img,
+                'HomeScore' => $display_home_score, 
+                'VisitingTeamName' => $visiting_team_name,
+                'VisitingTeamImg' => $away_img,
+                'VisitingScore' => $display_visiting_score, 
+                'FieldAbbe' => is_array($fields['location'] ?? '') ? ($fields['location']['name'] ?? '') : ($fields['location'] ?? ''),
+                'GameResultText' => $game_result_text,
+                'GameStatus' => $game_status,
+                'WinningTeam' => $winning_team,
+                'LosingTeam' => $losing_team,
+            ];
+        }
+        wp_reset_postdata();
+    }
+    wp_send_json($formatted_data);
+    wp_die();
+}
         private function evaluate_volleyball_game_result($score_tsg, $score_opp, $iso_time) {
         $now = new DateTime('now', new DateTimeZone('Asia/Taipei')); //output : 2025-08-01T12:00:00+08:00
         $game_time = $iso_time ? new DateTime($iso_time) : null; // output : 2025-08-01T18:00:00+08:00
