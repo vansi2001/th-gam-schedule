@@ -148,7 +148,7 @@ class Game_Event_Calendar_Shortcode
     //     wp_send_json($formatted_data);
     //     wp_die();
     // }
-    public function get_cbpl_data()
+public function get_cbpl_data()
 {
     if (!defined('DOING_AJAX') || !DOING_AJAX || empty($_POST)) {
         wp_send_json_error(['message' => 'Invalid or malformed request.'], 400);
@@ -228,27 +228,21 @@ class Game_Event_Calendar_Shortcode
             if (!empty($fields['AWAY'])) {
                 $away_img = is_array($fields['AWAY']) ? ($fields['AWAY']['url'] ?? '') : $fields['AWAY'];
             }
-
+            
             $home_sets_won = 0;
             $away_sets_won = 0;
-            $sets_played = 0;
-            $is_ongoing = false;
+            $sets = ['1st', '2nd', '3rd', '4th', '5th'];
             $score_tsg = is_array($fields['Score-tsg'] ?? null) ? $fields['Score-tsg'] : [];
             $score_opp = is_array($fields['Score'] ?? null) ? $fields['Score'] : [];
-            $sets = ['1st', '2nd', '3rd', '4th', '5th'];
 
             foreach ($sets as $index => $set_key) {
                 $tsg_score = (int)($score_tsg[$set_key] ?? 0);
                 $opp_score = (int)($score_opp[$set_key] ?? 0);
 
                 if ($tsg_score === 0 && $opp_score === 0) {
-                    if ($sets_played > 0) {
-                        $is_ongoing = true;
-                    }
                     continue;
                 }
                 
-                $sets_played++;
                 $win_score = ($index < 4) ? 25 : 15;
                 $score_difference = abs($tsg_score - $opp_score);
 
@@ -258,76 +252,73 @@ class Game_Event_Calendar_Shortcode
                     } else {
                         $away_sets_won++;
                     }
-                } else {
-                    $is_ongoing = true;
                 }
             }
-            
-            $game_status = 9;
-            $game_is_stop = false;
-            $sets_played = $home_sets_won + $away_sets_won;
 
-            if ($home_sets_won >= 3 || $away_sets_won >= 3) {
-                $game_status = 0; // Kết thúc
-            } elseif ($sets_played > 0) {
-                $game_status = 2; // Đang diễn ra/Tạm dừng
-            } elseif ($datetime_obj && $now > $datetime_obj) {
-                $game_status = 1; // Hoãn
-                $game_is_stop = true;
-            } else {
-                $game_status = 9; // Chưa đấu
-            }
+            $game_status = $fields['gameStatus'] ?? 9; 
 
+            $game_result_text = '';
+            $display_home_score = '_';
+            $display_visiting_score = '_';
             $winning_team = '-';
             $losing_team = '-';
-            $game_result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
+            $game_result_name = '';
 
-            if ($game_status === 0) {
-                if ($home_sets_won > $away_sets_won) {
-                    $winning_team = 'HOME';
-                    $losing_team = 'AWAY';
-                } else {
-                    $winning_team = 'AWAY';
-                    $losing_team = 'HOME';
-                }
-                $game_result_name = "{$winning_team} WIN";
+            switch ((int) $game_status) {
+                case 0: 
+                    $game_result_text = 'FINAL';
+                    $display_home_score = $home_sets_won;
+                    $display_visiting_score = $away_sets_won;
+                    if ($home_sets_won > $away_sets_won) {
+                        $winning_team = 'HOME';
+                        $losing_team = 'AWAY';
+                    } else {
+                        $winning_team = 'AWAY';
+                        $losing_team = 'HOME';
+                    }
+                    $game_result_name = "{$winning_team} WIN";
+                    break;
+                case 1: 
+                    $game_result_text = 'VS';
+                    $game_time_string = '<span class="game-postponed-text">延賽</span>';
+                    $display_home_score = '0';
+                    $display_visiting_score = '0';
+                    $game_result_name = 'Hoãn';
+                    break;
+                case 2: 
+                    $game_result_text = '<span class="game-postponed-text">保留</span>';                   
+                    $display_home_score = $home_sets_won;
+                    $display_visiting_score = $away_sets_won;
+                    $game_result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
+                    break;
+                case 3: 
+                    $game_result_text = '<span class="game-postponed-text">比賽中</span>';;     
+                    $display_home_score = $home_sets_won;
+                    $display_visiting_score = $away_sets_won;
+                    $game_result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
+                    break;
+                case 4: 
+                    $game_result_text = '<span class="game-postponed-text">取消</span>';
+                    $display_home_score = '_';
+                    $display_visiting_score = '_';
+                    $game_result_name = 'Hủy';
+                    break;
+                case 9: 
+                default:
+                    $game_result_text = 'VS';
+                    $display_home_score = '_';
+                    $display_visiting_score = '_';
+                    $game_result_name = 'Chưa đấu';
+                    break;
             }
-            // --- KẾT THÚC LOGIC TRẠNG THÁI MỚI ---
 
-            // Cập nhật giá trị hiển thị dựa trên trạng thái
-            $display_home_score = ($game_status === 9 || $game_status === 1) ? 0 : $home_sets_won;
-            $display_visiting_score = ($game_status === 9 || $game_status === 1) ? 0 : $away_sets_won;
-            // Khởi tạo mặc định
-            $game_result_text = 'VS';
-            $display_home_score = '-';
-            $display_visiting_score = '-';
-            $today = date('Y-m-d');
-           if ($game_status === 0) {
-                $game_result_text = 'FINAL';
-                $display_home_score = $home_sets_won;
-                $display_visiting_score = $away_sets_won;
-            } elseif ($game_status === 2) {
-                $game_result_text = '<span class="game-postponed-text">保留</span>';
-                $display_home_score = $home_sets_won;
-                $display_visiting_score = $away_sets_won;
-            } elseif ($game_status === 1) {
-                $game_time_string = '<span class="game-postponed-text">延賽</span>';
-                $display_home_score = 0;
-                $display_visiting_score = 0;
-            } elseif ($game_status === 9) {
-                $game_result_text = 'VS';
-                $display_home_score = '_';
-                $display_visiting_score = '_';
-            }
-
-                $formatted_data[] = [
+            $formatted_data[] = [
                 'GameDate' => $game_date,
                 'GameDateTimeS' => $game_time_string,
                 'GameResult' => $fields['GameResult'] ?? 0,
                 'GameResultName' => $game_result_name,
                 'GameLink' => get_permalink($post_id),
-                // 'GameSno' => get_the_ID(),
-                'GameSno' => '_',
+                'GameSno' => $fields['gamesNo'], 
                 'GameMonth' => $datetime_obj ? $datetime_obj->format('Y-m') : '',
                 'GameWeek' => $game_day_of_week,
                 'HomeTeamName' => $home_team_name,
@@ -341,6 +332,7 @@ class Game_Event_Calendar_Shortcode
                 'GameStatus' => $game_status,
                 'WinningTeam' => $winning_team,
                 'LosingTeam' => $losing_team,
+                'post_url' => get_permalink($post->ID),
             ];
         }
         wp_reset_postdata();
