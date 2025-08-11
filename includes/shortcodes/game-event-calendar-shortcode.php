@@ -21,6 +21,7 @@ class Game_Event_Calendar_Shortcode
     }
 
     //註冊ajax接口
+
 public function get_cbpl_data()
 {
     if (!defined('DOING_AJAX') || !DOING_AJAX || empty($_POST)) {
@@ -59,14 +60,16 @@ public function get_cbpl_data()
             $home_team_name = '';
             $visiting_team_name = '';
 
-           if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
+            if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
                 $visiting_team_name = trim($matches[1]);
                 $home_team_name = trim($matches[2]);
             }
-           
+            
             $game_date = '';
-            $game_time = '';
+            $game_time_string = '';
             $game_day_of_week = '';
+            $datetime_obj = null;
+            $now = new DateTime();
 
             if (!empty($fields['time'])) {
                 $raw_time_string = $fields['time'];
@@ -75,7 +78,7 @@ public function get_cbpl_data()
 
                 if ($datetime_obj !== false) {
                     $game_date = $datetime_obj->format('Y-m-d');
-                    $game_time = $datetime_obj->format('H:i');
+                    $game_time_string = $datetime_obj->format('H:i');
                     $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
                     $day_index = $datetime_obj->format('N') - 1;
                     $game_day_of_week = $days_map[$day_index] ?? '';
@@ -83,7 +86,7 @@ public function get_cbpl_data()
                     $datetime_obj_date_only = DateTime::createFromFormat('Y/m/d', $clean_time_string);
                     if ($datetime_obj_date_only !== false) {
                         $game_date = $datetime_obj_date_only->format('Y-m-d');
-                        $game_time = '';
+                        $game_time_string = '';
                         $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
                         $day_index = $datetime_obj_date_only->format('N') - 1;
                         $game_day_of_week = $days_map[$day_index] ?? '';
@@ -99,47 +102,110 @@ public function get_cbpl_data()
             if (!empty($fields['AWAY'])) {
                 $away_img = is_array($fields['AWAY']) ? ($fields['AWAY']['url'] ?? '') : $fields['AWAY'];
             }
-
-            $home_sets = 0;
-            $away_sets = 0;
+            
+            $home_sets_won = 0;
+            $away_sets_won = 0;
+            $sets = ['1st', '2nd', '3rd', '4th', '5th'];
             $score_tsg = is_array($fields['Score-tsg'] ?? null) ? $fields['Score-tsg'] : [];
             $score_opp = is_array($fields['Score'] ?? null) ? $fields['Score'] : [];
-            $all_keys = array_unique(array_merge(array_keys($score_tsg), array_keys($score_opp)));
-            natsort($all_keys);
-            foreach ($all_keys as $key) {
-                if ($home_sets === 3 || $away_sets === 3) break;
-                $h = (int) ($score_tsg[$key] ?? 0);
-                $a = (int) ($score_opp[$key] ?? 0);
-                if ($h > $a) {
-                    $home_sets++;
-                } elseif ($a > $h) {
-                    $away_sets++;
+
+            foreach ($sets as $index => $set_key) {
+                $tsg_score = (int)($score_tsg[$set_key] ?? 0);
+                $opp_score = (int)($score_opp[$set_key] ?? 0);
+
+                if ($tsg_score === 0 && $opp_score === 0) {
+                    continue;
+                }
+                
+                $win_score = ($index < 4) ? 25 : 15;
+                $score_difference = abs($tsg_score - $opp_score);
+
+                if (($tsg_score >= $win_score && $score_difference >= 2) || ($opp_score >= $win_score && $score_difference >= 2)) {
+                    if ($tsg_score > $opp_score) {
+                        $home_sets_won++;
+                    } else {
+                        $away_sets_won++;
+                    }
                 }
             }
 
-            $game_result_text = ($home_sets > 0 || $away_sets > 0) ? 'FINAL' : 'VS';
+            $game_status = $fields['gameStatus'] ?? 9; 
 
-            $display_home_score = ($game_result_text === 'VS') ? '_' : $home_sets;
-            $display_visiting_score = ($game_result_text === 'VS') ? '_' : $away_sets;
+            $game_result_text = '';
+            $display_home_score = '_';
+            $display_visiting_score = '_';
+            $winning_team = '-';
+            $losing_team = '-';
+            $game_result_name = '';
+
+            switch ((int) $game_status) {
+                case 0: 
+                    $game_result_text = 'FINAL';
+                    $display_home_score = $home_sets_won;
+                    $display_visiting_score = $away_sets_won;
+                    if ($home_sets_won > $away_sets_won) {
+                        $winning_team = 'HOME';
+                        $losing_team = 'AWAY';
+                    } else {
+                        $winning_team = 'AWAY';
+                        $losing_team = 'HOME';
+                    }
+                    $game_result_name = "{$winning_team} WIN";
+                    break;
+                case 1: 
+                    $game_result_text = 'VS';
+                    $game_time_string = '<span class="game-postponed-text">延賽</span>';
+                    $display_home_score = '0';
+                    $display_visiting_score = '0';
+                    $game_result_name = 'Hoãn';
+                    break;
+                case 2: 
+                    $game_result_text = '<span class="game-postponed-text">保留</span>';                   
+                    $display_home_score = $home_sets_won;
+                    $display_visiting_score = $away_sets_won;
+                    $game_result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
+                    break;
+                case 3: 
+                    $game_result_text = '<span class="game-postponed-text">比賽中</span>';;     
+                    $display_home_score = $home_sets_won;
+                    $display_visiting_score = $away_sets_won;
+                    $game_result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
+                    break;
+                case 4: 
+                    $game_result_text = '<span class="game-postponed-text">取消</span>';
+                    $display_home_score = '_';
+                    $display_visiting_score = '_';
+                    $game_result_name = 'Hủy';
+                    break;
+                case 9: 
+                default:
+                    $game_result_text = 'VS';
+                    $display_home_score = '_';
+                    $display_visiting_score = '_';
+                    $game_result_name = 'Chưa đấu';
+                    break;
+            }
 
             $formatted_data[] = [
-                'GameDate'         => $game_date,
-                'GameDateTimeS'    => $game_time,
-                'GameResult'       => $fields['GameResult'] ?? 0,
-                'GameResultName'   => $fields['GameResultName'] ?? '',
+                'GameDate' => $game_date,
+                'GameDateTimeS' => $game_time_string,
+                'GameResult' => $fields['GameResult'] ?? 0,
+                'GameResultName' => $game_result_name,
                 'GameLink' => get_permalink($post_id),
-                // 'GameSno'          => get_the_ID(),
-                'GameSno'          => '_',
-                'GameMonth'        => $datetime_obj ? $datetime_obj->format('Y-m') : '',
-                'DayOfWeek'        => $game_day_of_week,
-                'HomeTeamName'     => $home_team_name,
-                'HomeTeamImg'      => $home_img,
-                'HomeScore'        => $display_home_score,
+                'GameSno' => $fields['gamesNo'], 
+                'GameMonth' => $datetime_obj ? $datetime_obj->format('Y-m') : '',
+                'GameWeek' => $game_day_of_week,
+                'HomeTeamName' => $home_team_name,
+                'HomeTeamImg' => $home_img,
+                'HomeScore' => $display_home_score, 
                 'VisitingTeamName' => $visiting_team_name,
-                'VisitingTeamImg'  => $away_img,
-                'VisitingScore'    => $display_visiting_score,
-                'FieldAbbe'        => is_array($fields['location'] ?? '') ? ($fields['location']['name'] ?? '') : ($fields['location'] ?? ''),
-                'GameResultText'   => $game_result_text,
+                'VisitingTeamImg' => $away_img,
+                'VisitingScore' => $display_visiting_score, 
+                'FieldAbbe' => is_array($fields['location'] ?? '') ? ($fields['location']['name'] ?? '') : ($fields['location'] ?? ''),
+                'GameResultText' => $game_result_text,
+                'GameStatus' => $game_status,
+                'WinningTeam' => $winning_team,
+                'LosingTeam' => $losing_team,
             ];
         }
         wp_reset_postdata();
@@ -147,7 +213,6 @@ public function get_cbpl_data()
     wp_send_json($formatted_data);
     wp_die();
 }
-
 private function get_image_url_from_acf($fields, $key)
 {
     if (empty($fields[$key])) {

@@ -205,7 +205,7 @@
     background-color: #f4f4f4;
 }
 
-.calendar-list-content:not(:first-child){
+.calendar-list-content:not(:first-child) {
     border-top: none;
 }
 
@@ -265,15 +265,8 @@
     max-height: 100%;
     object-fit: contain;
 }
-
-.game-info-cell {
-    position: relative;
-    z-index: 10;
-    cursor: pointer; 
-}
-
-.game-info-cell * {
-    pointer-events: none;
+.game-postponed-text{
+    color:#ff5d5d;;
 }
 
 @media (max-width:1023px) {
