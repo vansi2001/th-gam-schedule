@@ -1,4 +1,19 @@
 jQuery(function ($) {
+  $(document).on('click', '[data-url]', function() {
+    let url = $(this).attr('data-url');
+    if (url) {
+      window.location.href = url;
+    }
+  });
+
+  $(document).on('mouseenter', '[data-url]', function() {
+    $(this).css('cursor', 'pointer');
+  });
+
+  $(document).on('mouseleave', '[data-url]', function() {
+    $(this).css('cursor', 'default');
+  });
+
   $.ajax({
     url: PHP_DATA["ajax_url"],
     method: "POST",
@@ -18,71 +33,66 @@ jQuery(function ($) {
         `#${PHP_DATA["id"]} .calendar-table-view td[data-date=${element.GameDate}]>.calendar-day-info`
       );
       let postponedClass =
-        element.GameResult != 0 && element.GameResult != 9
-          ? "game-postponed"
-          : "";
+        element.GameResult != 0 && element.GameResult != 9 ? "game-postponed" : "";
       let gameStatueText =
         element.GameResult != 0 && element.GameResult != 9
           ? element.GameResultName
           : element.GameDateTimeS;
+
       if (
-        $(
-          `#${PHP_DATA["id"]} .calendar-table-view td[data-date=${element.GameDate}]>.calendar-day-info>.game-info-cell`
-        ).length > 0
+        $(`#${PHP_DATA["id"]} .calendar-table-view td[data-date=${element.GameDate}]>.calendar-day-info>.game-info-cell`).length > 0
       ) {
         targetTableTd.append(`
-            <section class="game-info-cell" hidden>
-               <div class="game-detail-info">
+          <section class="game-info-cell" hidden data-url="${element.post_url}">
+              <div class="game-detail-info">
                   <div>
-                     <img src="${element.VisitingTeamImg}" alt="">
+                      <img src="${element.VisitingTeamImg}" alt="">
                   </div>
                   <div class="game-number">${element.GameSno}</div>
                   <div>
-                     <img src="${element.HomeTeamImg}" alt="">
+                      <img src="${element.HomeTeamImg}" alt="">
                   </div>
                   <div class="team-score">${element.VisitingScore}</div>
                   <div class="team-versus">${element.GameResultText}</div>
                   <div class="team-score">${element.HomeScore}</div>
-               </div>
-               <div class="game-location-time">
+              </div>
+              <div class="game-location-time">
                   <div>${element.FieldAbbe}</div>
                   <div><span class="${postponedClass}">${gameStatueText}</span></div>
-               </div>
-            </section>
-            `);
+              </div>
+          </section>
+        `);
         if (
-          $(
-            `#${PHP_DATA["id"]} .calendar-table-view td[data-date=${element.GameDate}]>.calendar-day-info>.day-game-switcher`
-          ).length == 0
+          $(`#${PHP_DATA["id"]} .calendar-table-view td[data-date=${element.GameDate}]>.calendar-day-info>.day-game-switcher`).length == 0
         ) {
           targetTableTd.append(`
             <div class="day-game-switcher" data-gameview="0">
-               <button data-gameswitch="prev" class="game-prev" style="visibility:hidden;"></button>
-               <button data-gameswitch="next" class="game-next"></button>
+                <button data-gameswitch="prev" class="game-prev" style="visibility:hidden;"></button>
+                <button data-gameswitch="next" class="game-next"></button>
             </div>
           `);
         }
       } else {
         targetTableTd.append(`
-          <section class="game-info-cell">
-             <div class="game-detail-info">
-                <div>
-                   <img src="${element.VisitingTeamImg}" alt="">
-                </div>
-                <div class="game-number">${element.GameSno}</div>
-                <div>
-                   <img src="${element.HomeTeamImg}" alt="">
-                </div>
-                <div class="team-score">${element.VisitingScore}</div>
-                <div class="team-versus">${element.GameResultText}</div>
-                <div class="team-score">${element.HomeScore}</div>
-             </div>
-             <div class="game-location-time">
-                <div>${element.FieldAbbe}</div>
-                <div><span class="${postponedClass}">${gameStatueText}</span></div>
-             </div>
+          <section class="game-info-cell" data-url="${element.post_url}">
+              <div class="game-detail-info">
+                  <div>
+                      <img src="${element.VisitingTeamImg}" alt="">
+                  </div>
+                  <div class="game-number">${element.GameSno}</div>
+                  <div>
+                      <img src="${element.HomeTeamImg}" alt="">
+                  </div>
+                  <div class="team-score">${element.VisitingScore}</div>
+                  <div class="team-versus">${element.GameResultText}</div>
+                  <div class="team-score">${element.HomeScore}</div>
+              </div>
+              <div class="game-location-time">
+                  <div>${element.FieldAbbe}</div>
+                  <div><span class="${postponedClass}">${gameStatueText}</span></div>
+              </div>
           </section>
-         `);
+        `);
       }
 
       let listHomeScore = "";
@@ -97,70 +107,63 @@ jQuery(function ($) {
       );
 
       if (
-        $(
-          `#${PHP_DATA["id"]} .calendar-list-view[data-month-list=${element.GameMonth}]>.calendar-list-ngame`
-        ).length > 0
+        $(`#${PHP_DATA["id"]} .calendar-list-view[data-month-list=${element.GameMonth}]>.calendar-list-ngame`).length > 0
       ) {
-        $(
-          `#${PHP_DATA["id"]} .calendar-list-view[data-month-list=${element.GameMonth}]>.calendar-list-ngame`
-        ).remove();
+        $(`#${PHP_DATA["id"]} .calendar-list-view[data-month-list=${element.GameMonth}]>.calendar-list-ngame`).remove();
       }
       if (
-        $(
-          `#${PHP_DATA["id"]} .calendar-list-view[data-month-list=${element.GameMonth}]>section[data-date=${element.GameDate}]`
-        ).length > 0
+        $(`#${PHP_DATA["id"]} .calendar-list-view[data-month-list=${element.GameMonth}]>section[data-date=${element.GameDate}]`).length > 0
       ) {
         $(
           `#${PHP_DATA["id"]} .calendar-list-view[data-month-list=${element.GameMonth}]>section[data-date=${element.GameDate}] .calendar-list-content`
         ).append(`
-        <div class="per-game">
-         <div class="per-game-time">
-               <span class="${postponedClass}">${gameStatueText}</span>
-         </div>
-         <div class="per-game-dot"></div>
-         <div class="per-game-versus">
-               ${element.VisitingTeamName}
-               ${listHomeScore}
-               &nbsp;${element.GameResultText}&nbsp;
-               ${listVisitingScore}
-               ${element.HomeTeamName}
-         </div>
-         <div class="per-game-location">-
-               ${element.FieldAbbe}
-         </div>
-        </div>
+          <div class="per-game" data-url="${element.post_url}">
+            <div class="per-game-time">
+                <span class="${postponedClass}">${gameStatueText}</span>
+            </div>
+            <div class="per-game-dot"></div>
+            <div class="per-game-versus">
+                ${element.VisitingTeamName}
+                ${listHomeScore}
+                &nbsp;${element.GameResultText}&nbsp;
+                ${listVisitingScore}
+                ${element.HomeTeamName}
+            </div>
+            <div class="per-game-location">-
+                ${element.FieldAbbe}
+            </div>
+          </div>
         `);
       } else {
         targetList.append(`
-         <section class="claendar-list-wrapper" data-date=${element.GameDate}>
-            <div class="calendar-list-date">
-               <div>${element.GameDate}</div>
-               <div>${element.GameWeek}</div>
-            </div>
-            <div class="calendar-list-content">
-               <div class="per-game">
-                  <div class="per-game-time">
-                        <span class="${postponedClass}">${gameStatueText}</span>
+          <section class="claendar-list-wrapper" data-date=${element.GameDate}>
+              <div class="calendar-list-date">
+                  <div>${element.GameDate}</div>
+                  <div>${element.GameWeek}</div>
+              </div>
+              <div class="calendar-list-content">
+                  <div class="per-game" data-url="${element.post_url}">
+                      <div class="per-game-time">
+                          <span class="${postponedClass}">${gameStatueText}</span>
+                      </div>
+                      <div class="per-game-dot"></div>
+                      <div class="per-game-versus">
+                          ${element.VisitingTeamName}
+                          ${listVisitingScore}
+                          &nbsp;${element.GameResultText}&nbsp;
+                          ${listHomeScore}
+                          ${element.HomeTeamName}
+                      </div>
+                      <div class="per-game-location">-
+                          ${element.FieldAbbe}
+                      </div>
                   </div>
-                  <div class="per-game-dot"></div>
-                  <div class="per-game-versus">
-                        ${element.VisitingTeamName}
-                        ${listVisitingScore}
-                        &nbsp;${element.GameResultText}&nbsp;
-                        ${listHomeScore}
-                        ${element.HomeTeamName}
-                  </div>
-                  <div class="per-game-location">-
-                        ${element.FieldAbbe}
-                  </div>
-               </div>
-            </div>
-            </div>
-         </section>
-         `);
+              </div>
+          </section>
+        `);
       }
     });
-    $(".calendar-loading-mask").fadeOut(400, () => {});
+    $(".calendar-loading-mask").fadeOut(400, () => { });
 
     let animateFinished = true;
     $(".month-switcher-btn").on("click", function () {
@@ -226,7 +229,7 @@ jQuery(function ($) {
       let triggerAction = $(this).attr("data-gameswitch");
       let allGames = $(this)
         .parents(".calendar-day-info")
-        .children(".game-info-cell");
+        .children("section");
       let currentView = parseInt(
         $(this).parent(".day-game-switcher").attr("data-gameview")
       );

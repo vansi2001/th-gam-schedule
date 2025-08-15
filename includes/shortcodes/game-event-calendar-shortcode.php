@@ -54,15 +54,23 @@ public function get_cbpl_data()
 
             $post_id = get_the_ID();
             $fields = function_exists('get_fields') ? (get_fields($post_id) ?: []) : [];
-
             $post_title = get_the_title($post_id);
 
             $home_team_name = '';
             $visiting_team_name = '';
+            
+            $tsg_is_home = ($fields['team'] ?? '') === 'HOME';
 
-            if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
-                $visiting_team_name = trim($matches[1]);
-                $home_team_name = trim($matches[2]);
+            if ($tsg_is_home) {
+                $home_team_name = '台鋼天鷹';
+                if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
+                    $visiting_team_name = trim($matches[1]);
+                }
+            } else { 
+                $visiting_team_name = '台鋼天鷹';
+                if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
+                    $home_team_name = trim($matches[2]);
+                }
             }
             
             $game_date = '';
@@ -122,9 +130,17 @@ public function get_cbpl_data()
 
                 if (($tsg_score >= $win_score && $score_difference >= 2) || ($opp_score >= $win_score && $score_difference >= 2)) {
                     if ($tsg_score > $opp_score) {
-                        $home_sets_won++;
+                        if ($tsg_is_home) {
+                            $home_sets_won++;
+                        } else {
+                            $away_sets_won++;
+                        }
                     } else {
-                        $away_sets_won++;
+                        if ($tsg_is_home) {
+                            $away_sets_won++;
+                        } else {
+                            $home_sets_won++;
+                        }
                     }
                 }
             }
@@ -157,32 +173,32 @@ public function get_cbpl_data()
                     $game_time_string = '<span class="game-postponed-text">延賽</span>';
                     $display_home_score = '0';
                     $display_visiting_score = '0';
-                    $game_result_name = 'Hoãn';
+                    $game_result_name = '延賽';
                     break;
                 case 2: 
-                    $game_result_text = '<span class="game-postponed-text">保留</span>';                   
+                    $game_result_text = '<span class="game-postponed-text">保留</span>';         
                     $display_home_score = $home_sets_won;
                     $display_visiting_score = $away_sets_won;
-                    $game_result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
+                    $game_result_name = "保留";
                     break;
                 case 3: 
-                    $game_result_text = '<span class="game-postponed-text">比賽中</span>';;     
+                    $game_result_text = '<span class="game-postponed-text">比賽中</span>';
                     $display_home_score = $home_sets_won;
                     $display_visiting_score = $away_sets_won;
-                    $game_result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
+                    $game_result_name = "比賽中";
                     break;
                 case 4: 
                     $game_result_text = '<span class="game-postponed-text">取消</span>';
-                    $display_home_score = '_';
-                    $display_visiting_score = '_';
-                    $game_result_name = 'Hủy';
+                    $display_home_score = $home_sets_won;
+                    $display_visiting_score = $away_sets_won;
+                    $game_result_name = '取消';
                     break;
                 case 9: 
                 default:
                     $game_result_text = 'VS';
                     $display_home_score = '_';
                     $display_visiting_score = '_';
-                    $game_result_name = 'Chưa đấu';
+                    $game_result_name = 'VS';
                     break;
             }
 
@@ -191,7 +207,6 @@ public function get_cbpl_data()
                 'GameDateTimeS' => $game_time_string,
                 'GameResult' => $fields['GameResult'] ?? 0,
                 'GameResultName' => $game_result_name,
-                'GameLink' => get_permalink($post_id),
                 'GameSno' => $fields['gamesNo'], 
                 'GameMonth' => $datetime_obj ? $datetime_obj->format('Y-m') : '',
                 'GameWeek' => $game_day_of_week,
@@ -206,6 +221,7 @@ public function get_cbpl_data()
                 'GameStatus' => $game_status,
                 'WinningTeam' => $winning_team,
                 'LosingTeam' => $losing_team,
+                'post_url' => get_permalink($post->ID),
             ];
         }
         wp_reset_postdata();
