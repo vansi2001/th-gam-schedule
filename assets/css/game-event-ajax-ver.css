@@ -64,9 +64,7 @@
     height: 231px;
     border-radius: 10px;
     padding: 20px 10px;
-    /* background-color: #f4f4f4; */
-            background-color: rgba(0, 255, 255, 0.087);
-
+    background-color: #f4f4f4;
     cursor: pointer;
 }
 
@@ -194,7 +192,6 @@
     .th-game-recently .th-game-card {
         padding: 10px 10px;
         height: 210px;
-        background-color: #88B9E2;
     }
 
     .th-game-recently .th-game-info {
@@ -221,8 +218,6 @@
     .th-game-recently .th-game-card {
         min-width: 99%;
         margin: 0px 5px;
-        background-color: rgba(0, 255, 255, 0.087);
-
     }
 
     .th-game-recently .th-game-logo img {

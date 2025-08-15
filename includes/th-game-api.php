@@ -264,11 +264,10 @@ class Th_Game_Api
             $weekdays = date('N', $datetime); // 1 (Thứ Hai) tới 7 (Chủ nhật)
 
             $result_data = $this->evaluate_volleyball_game_result($score_tsg, $score_opp, $timeS,$tsg_is_home);
-
             $response[] = [
                 'Seq'                    => (string)($i + 1),
                 'Game_title'             => $post->post_title,
-                'PresentStatus'          => $game_staus_default?$result_data['GameStatus'] : 9, // 9: 未開始, 0: 結束, 1: 延期, 2: 保留, 3: 比賽中, 4 : 取消
+                'PresentStatus'          => $game_staus_default?? $result_data['GameStatus_auto_count_by_score']?? 9, // 9: 未開始, 0: 結束, 1: 延期, 2: 保留, 3: 比賽中, 4 : 取消
                 'GameDateTimeS'          => $timeS ?: '',
                 'GameDateTimeE'          => null,
                 'GameDuringTime'         => null,
@@ -460,7 +459,7 @@ class Th_Game_Api
         }
 
         return [
-            'GameStatus' => $game_status_by_score,
+            'GameStatus_auto_count_by_score' => $game_status_by_score,
             'GameResultName' => $game_result_name,
             'HomeSetsWon' => $home_sets_won,
             'AwaySetsWon' => $away_sets_won,

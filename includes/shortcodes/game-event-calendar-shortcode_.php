@@ -19,10 +19,136 @@ class Game_Event_Calendar_Shortcode
 
         add_shortcode('cbpl_game_schedule', [$this, 'register_calendar_shortcode']);
     }
-
+    
+    // add new function 
     //註冊ajax接口
+    // public function get_cbpl_data()
+    // {
+    //     if (!defined('DOING_AJAX') || !DOING_AJAX || empty($_POST)) {
+    //         wp_send_json_error(['message' => 'Invalid or malformed request.'], 400);
+    //         wp_die();
+    //     }
 
-public function get_cbpl_data()
+    //     $query_year = isset($_POST['year']) ? sanitize_text_field($_POST['year']) : date("Y");
+
+    //     $args = [
+    //         'post_type'      => 'contest_list',
+    //         'posts_per_page' => -1,
+    //         'post_status'    => 'publish',
+    //         'date_query'     => [
+    //             [
+    //                 'year' => (int) $query_year,
+    //             ],
+    //         ],
+    //         'orderby'        => 'meta_value',
+    //         'meta_key'       => 'time',
+    //         'order'          => 'ASC',
+    //     ];
+
+    //     $query = new \WP_Query($args);
+    //     $formatted_data = [];
+
+    //     if ($query->have_posts()) {
+    //         while ($query->have_posts()) {
+    //             $query->the_post();
+
+    //             $post_id = get_the_ID();
+    //             $fields = function_exists('get_fields') ? (get_fields($post_id) ?: []) : [];
+
+    //             $post_title = get_the_title($post_id);
+
+    //             $home_team_name = '';
+    //             $visiting_team_name = '';
+
+    //         if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
+    //                 $visiting_team_name = trim($matches[1]);
+    //                 $home_team_name = trim($matches[2]);
+    //             }
+            
+    //             $game_date = '';
+    //             $game_time = '';
+    //             $game_day_of_week = '';
+
+    //             if (!empty($fields['time'])) {
+    //                 $raw_time_string = $fields['time'];
+    //                 $clean_time_string = preg_replace('/\(\w+\)/u', '', $raw_time_string);
+    //                 $datetime_obj = DateTime::createFromFormat('Y/m/d H:i', $clean_time_string);
+
+    //                 if ($datetime_obj !== false) {
+    //                     $game_date = $datetime_obj->format('Y-m-d');
+    //                     $game_time = $datetime_obj->format('H:i');
+    //                     $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    //                     $day_index = $datetime_obj->format('N') - 1;
+    //                     $game_day_of_week = $days_map[$day_index] ?? '';
+    //                 } else {
+    //                     $datetime_obj_date_only = DateTime::createFromFormat('Y/m/d', $clean_time_string);
+    //                     if ($datetime_obj_date_only !== false) {
+    //                         $game_date = $datetime_obj_date_only->format('Y-m-d');
+    //                         $game_time = '';
+    //                         $days_map = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    //                         $day_index = $datetime_obj_date_only->format('N') - 1;
+    //                         $game_day_of_week = $days_map[$day_index] ?? '';
+    //                     }
+    //                 }
+    //             }
+
+    //             $home_img = '';
+    //             if (!empty($fields['HOME'])) {
+    //                 $home_img = is_array($fields['HOME']) ? ($fields['HOME']['url'] ?? '') : $fields['HOME'];
+    //             }
+    //             $away_img = '';
+    //             if (!empty($fields['AWAY'])) {
+    //                 $away_img = is_array($fields['AWAY']) ? ($fields['AWAY']['url'] ?? '') : $fields['AWAY'];
+    //             }
+
+    //             $home_sets = 0;
+    //             $away_sets = 0;
+    //             $score_tsg = is_array($fields['Score-tsg'] ?? null) ? $fields['Score-tsg'] : [];
+    //             $score_opp = is_array($fields['Score'] ?? null) ? $fields['Score'] : [];
+    //             $all_keys = array_unique(array_merge(array_keys($score_tsg), array_keys($score_opp)));
+    //             natsort($all_keys);
+    //             foreach ($all_keys as $key) {
+    //                 if ($home_sets === 3 || $away_sets === 3) break;
+    //                 $h = (int) ($score_tsg[$key] ?? 0);
+    //                 $a = (int) ($score_opp[$key] ?? 0);
+    //                 if ($h > $a) {
+    //                     $home_sets++;
+    //                 } elseif ($a > $h) {
+    //                     $away_sets++;
+    //                 }
+    //             }
+
+    //             $game_result_text = ($home_sets > 0 || $away_sets > 0) ? 'FINAL' : 'VS';
+
+    //             $display_home_score = ($game_result_text === 'VS') ? '_' : $home_sets;
+    //             $display_visiting_score = ($game_result_text === 'VS') ? '_' : $away_sets;
+
+    //             $formatted_data[] = [
+    //                 'GameDate'         => $game_date,
+    //                 'GameDateTimeS'    => $game_time,
+    //                 'GameResult'       => $fields['GameResult'] ?? 0,
+    //                 'GameResultName'   => $fields['GameResultName'] ?? '',
+    //                 'GameLink' => get_permalink($post_id),
+    //                 // 'GameSno'          => get_the_ID(),
+    //                 'GameSno'          => '_',
+    //                 'GameMonth'        => $datetime_obj ? $datetime_obj->format('Y-m') : '',
+    //                 'GameWeek'        => $game_day_of_week,
+    //                 'HomeTeamName'     => $home_team_name,
+    //                 'HomeTeamImg'      => $home_img,
+    //                 'HomeScore'        => $display_home_score,
+    //                 'VisitingTeamName' => $visiting_team_name,
+    //                 'VisitingTeamImg'  => $away_img,
+    //                 'VisitingScore'    => $display_visiting_score,
+    //                 'FieldAbbe'        => is_array($fields['location'] ?? '') ? ($fields['location']['name'] ?? '') : ($fields['location'] ?? ''),
+    //                 'GameResultText'   => $game_result_text,
+    //             ];
+    //         }
+    //         wp_reset_postdata();
+    //     }
+    //     wp_send_json($formatted_data);
+    //     wp_die();
+    // }
+    public function get_cbpl_data()
 {
     if (!defined('DOING_AJAX') || !DOING_AJAX || empty($_POST)) {
         wp_send_json_error(['message' => 'Invalid or malformed request.'], 400);
@@ -54,23 +180,15 @@ public function get_cbpl_data()
 
             $post_id = get_the_ID();
             $fields = function_exists('get_fields') ? (get_fields($post_id) ?: []) : [];
+
             $post_title = get_the_title($post_id);
 
             $home_team_name = '';
             $visiting_team_name = '';
-            
-            $tsg_is_home = ($fields['team'] ?? '') === 'HOME';
 
-            if ($tsg_is_home) {
-                $home_team_name = '台鋼天鷹';
-                if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
-                    $visiting_team_name = trim($matches[1]);
-                }
-            } else { 
-                $visiting_team_name = '台鋼天鷹';
-                if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
-                    $home_team_name = trim($matches[2]);
-                }
+            if (preg_match('/^\d{1,2}\/\d{1,2}\s+(.+?)\s+vs\s+(.+)$/ui', $post_title, $matches)) {
+                $visiting_team_name = trim($matches[1]);
+                $home_team_name = trim($matches[2]);
             }
             
             $game_date = '';
@@ -130,17 +248,9 @@ public function get_cbpl_data()
 
                 if (($tsg_score >= $win_score && $score_difference >= 2) || ($opp_score >= $win_score && $score_difference >= 2)) {
                     if ($tsg_score > $opp_score) {
-                        if ($tsg_is_home) {
-                            $home_sets_won++;
-                        } else {
-                            $away_sets_won++;
-                        }
+                        $home_sets_won++;
                     } else {
-                        if ($tsg_is_home) {
-                            $away_sets_won++;
-                        } else {
-                            $home_sets_won++;
-                        }
+                        $away_sets_won++;
                     }
                 }
             }
@@ -176,13 +286,13 @@ public function get_cbpl_data()
                     $game_result_name = '延賽';
                     break;
                 case 2: 
-                    $game_result_text = '<span class="game-postponed-text">保留</span>';         
+                    $game_result_text = '<span class="game-postponed-text">保留</span>';                   
                     $display_home_score = $home_sets_won;
                     $display_visiting_score = $away_sets_won;
                     $game_result_name = "保留";
                     break;
                 case 3: 
-                    $game_result_text = '<span class="game-postponed-text">比賽中</span>';
+                    $game_result_text = '<span class="game-postponed-text">比賽中</span>';;     
                     $display_home_score = $home_sets_won;
                     $display_visiting_score = $away_sets_won;
                     $game_result_name = "比賽中";
@@ -207,6 +317,7 @@ public function get_cbpl_data()
                 'GameDateTimeS' => $game_time_string,
                 'GameResult' => $fields['GameResult'] ?? 0,
                 'GameResultName' => $game_result_name,
+                'GameLink' => get_permalink($post_id),
                 'GameSno' => $fields['gamesNo'], 
                 'GameMonth' => $datetime_obj ? $datetime_obj->format('Y-m') : '',
                 'GameWeek' => $game_day_of_week,
@@ -221,7 +332,6 @@ public function get_cbpl_data()
                 'GameStatus' => $game_status,
                 'WinningTeam' => $winning_team,
                 'LosingTeam' => $losing_team,
-                'post_url' => get_permalink($post->ID),
             ];
         }
         wp_reset_postdata();
@@ -229,90 +339,182 @@ public function get_cbpl_data()
     wp_send_json($formatted_data);
     wp_die();
 }
-private function get_image_url_from_acf($fields, $key)
-{
-    if (empty($fields[$key])) {
-        return '';
-    }
-    return is_array($fields[$key]) ? ($fields[$key]['url'] ?? '') : $fields[$key];
-}
+        private function evaluate_volleyball_game_result($score_tsg, $score_opp, $iso_time) {
+        $now = new DateTime('now', new DateTimeZone('Asia/Taipei')); //output : 2025-08-01T12:00:00+08:00
+        $game_time = $iso_time ? new DateTime($iso_time) : null; // output : 2025-08-01T18:00:00+08:00
+        $home_sets_won = 0;
+        $away_sets_won = 0;
+        $sets_played = 0;
+        $is_ongoing = false;
+        $sets = ['1st', '2nd', '3rd', '4th', '5th'];
 
-    private function format_cpbl_game_schedule($data)
-    {
-        $return_data = array();
-        $default_img = array(
-            'AAA011' => THGAMES_URL_PATH . 'assets/img/Dragons.png',
-            'AAA022' => THGAMES_URL_PATH . 'assets/img/Dragons.png',
-            'AEO011' => THGAMES_URL_PATH . 'assets/img/Guardians.png',
-            'AEO022' => THGAMES_URL_PATH . 'assets/img/Guardians.png',
-            'ACN011' => THGAMES_URL_PATH . 'assets/img/Brothers.png',
-            'ACN022' => THGAMES_URL_PATH . 'assets/img/Brothers.png',
-            'ADD011' => THGAMES_URL_PATH . 'assets/img/Lions.png',
-            'ADD022' => THGAMES_URL_PATH . 'assets/img/Lions.png',
-            'AJL011' => THGAMES_URL_PATH . 'assets/img/Monkeys.png',
-            'AJL022' => THGAMES_URL_PATH . 'assets/img/Monkeys.png',
-            'AKP011' => THGAMES_URL_PATH . 'assets/img/Hawks.png',
-            'AKP022' => THGAMES_URL_PATH . 'assets/img/Hawks.png',
-        );
-        $game_status = array(
-            0 => '結束',
-            1 => '延賽',
-            2 => '保留',
-            4 => '取消',
-            9 => '未賽',
-        );
-        $week_title = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        foreach ($data as $value) {
-            $need_info = array(
-                'GameSno' => '',
-                'FieldAbbe' => '',
-                'GameDateTimeS' => '',
-                'GameDate' => '',
-                'GameMonth' => '',
-                'GameWeek' => '',
-                'HomeTeamName' => '',
-                'HomeTeamCode' => '',
-                'HomeTeamImg' => '',
-                'HomeScore' => '',
-                'VisitingTeamName' => '',
-                'VisitingTeamCode' => '',
-                'VisitingTeamImg' => '',
-                'VisitingScore'  => '',
-                'GameResult' => '',
-                'GameResultName' => '',
-                'GameResultText' => 'VS'
-            );
+        foreach ($sets as $index => $set_key) {
+            $tsg_score = (int)($score_tsg[$set_key] ?? 0);
+            $opp_score = (int)($score_opp[$set_key] ?? 0);
 
-            if ($value['VisitingTeamCode'] === 'AKP011' || $value['HomeTeamCode'] === 'AKP011') {
-                $need_info['GameSno'] = $value['GameSno'];
-                $need_info['FieldAbbe'] = $value['FieldAbbe'];
-                $need_info['GameDateTimeS'] = date('H:i', strtotime($value['GameDateTimeS']));
-                $need_info['GameDate'] = date('Y-m-d', strtotime($value['GameDate']));
-                $need_info['GameMonth'] = date('Y-m', strtotime($value['GameDate']));
-                $need_info['GameWeek'] = $week_title[date('w', strtotime($value['GameDate']))];
-                $need_info['HomeTeamName'] = $value['HomeTeamName'];
-                $need_info['HomeTeamCode'] = $value['HomeTeamCode'];
-                $need_info['HomeScore'] = $value['HomeScore'];
-                $need_info['HomeTeamImg'] = $default_img[$value['HomeTeamCode']];
-                $need_info['VisitingTeamName'] = $value['VisitingTeamName'];
-                $need_info['VisitingTeamCode'] = $value['VisitingTeamCode'];
-                $need_info['VisitingScore'] = $value['VisitingScore'];
-                $need_info['VisitingTeamImg'] = $default_img[$value['VisitingTeamCode']];
-                $need_info['GameResult'] = $value['GameResult'];
-                if ($need_info['GameResult'] === '') {
-                    $need_info['GameResult'] = 9;
-                    $need_info['HomeScore'] = '-';
-                    $need_info['VisitingScore'] = '-';
+            if ($tsg_score === 0 && $opp_score === 0) {
+                if ($sets_played > 0) $is_ongoing = true;
+                continue;
+            }
+
+            $sets_played++;
+            $win_score = ($index < 4) ? 25 : 15;
+            $diff = abs($tsg_score - $opp_score);
+
+            if (($tsg_score >= $win_score && $diff >= 2) || ($opp_score >= $win_score && $diff >= 2)) {
+                if ($tsg_score > $opp_score) {
+                    $home_sets_won++;
+                } else {
+                    $away_sets_won++;
                 }
-                if ($need_info['GameResult'] == 0)  $need_info['GameResultText'] = 'FINAL';
-
-                $need_info['GameResultName'] = $game_status[$need_info['GameResult']];
-
-                array_push($return_data, $need_info);
+            } else {
+                $is_ongoing = true;
             }
         }
-        return $return_data;
+
+        $status = 'VS';
+        if ($home_sets_won >= 3 || $away_sets_won >= 3) {
+            $status = 'Final';
+        } elseif ($is_ongoing || $sets_played > 0) {
+           if (strtotime($now->format('Y-m-d')) > strtotime($game_time->format('Y-m-d'))) {
+             $status = '保留';    // thời gian hiện tại lớn hơn thời gian trận đấu thì là bị tạm dừng -  保留    
+            } else{
+                $status = '比賽中';
+            }
+        } elseif ($game_time && $now > $game_time) {
+            $status = '延賽';
+        }
+
+        $result_name = "HOME {$home_sets_won} : {$away_sets_won} AWAY";
+        if ($status === 0) {
+            $winner = ($home_sets_won > $away_sets_won) ? 'HOME' : 'AWAY';
+            $result_name = "{$winner} WIN";
+        }
+
+        return [
+            'GameStatus'     => $status,
+            'GameIsStop'     => $status === 1,
+            'GameResultName' => $result_name,
+            'HomeSetsWon'    => $home_sets_won,
+            'AwaySetsWon'    => $away_sets_won,
+            'WinningTeam'    => ($home_sets_won > $away_sets_won) ? 'HOME' : 'AWAY',
+            'LosingTeam'     => ($home_sets_won > $away_sets_won) ? 'AWAY' : 'HOME',
+        ];
     }
+
+    //註冊ajax接口
+    // public function get_cbpl_data()
+    // {
+    //     if (empty($_POST)) {
+    //         wp_send_json_error('Error: Method Not Allowed', 405);
+    //         wp_die();
+    //     }
+
+    //     $query_year = date("Y");
+    //     $query_kind_code = 'A';
+    //     if (isset($_POST['year'])) $query_year = $_POST['year'];
+    //     if (isset($_POST['kindCode'])) $query_kind_code = $_POST['kindCode'];
+
+    //     $url = "https://statsapi.cpbl.com.tw/Api/Record/GetSchedule?year=" . $query_year . "&kindCode=" . $query_kind_code;
+
+    //     $ch = curl_init();
+    //     curl_setopt($ch, CURLOPT_URL, $url);
+    //     curl_setopt($ch, CURLOPT_POST, true);
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    //     //暫時不檢查SSL
+    //     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    //     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+
+    //     $response_data = curl_exec($ch);
+    //     curl_close($ch);
+
+    //     $response_data = json_decode($response_data, true);
+    //     if ($response_data['Successed']) {
+    //         $format_data = $this->format_cpbl_game_schedule($response_data['ResponseDto']);
+    //         wp_send_json($format_data);
+    //     } else {
+    //         wp_send_json([]);
+    //     };
+    //     wp_die();
+    // }
+
+    // private function format_cpbl_game_schedule($data)
+    // {
+    //     $return_data = array();
+    //     $default_img = array(
+    //         'AAA011' => THGAMES_URL_PATH . 'assets/img/Dragons.png',
+    //         'AAA022' => THGAMES_URL_PATH . 'assets/img/Dragons.png',
+    //         'AEO011' => THGAMES_URL_PATH . 'assets/img/Guardians.png',
+    //         'AEO022' => THGAMES_URL_PATH . 'assets/img/Guardians.png',
+    //         'ACN011' => THGAMES_URL_PATH . 'assets/img/Brothers.png',
+    //         'ACN022' => THGAMES_URL_PATH . 'assets/img/Brothers.png',
+    //         'ADD011' => THGAMES_URL_PATH . 'assets/img/Lions.png',
+    //         'ADD022' => THGAMES_URL_PATH . 'assets/img/Lions.png',
+    //         'AJL011' => THGAMES_URL_PATH . 'assets/img/Monkeys.png',
+    //         'AJL022' => THGAMES_URL_PATH . 'assets/img/Monkeys.png',
+    //         'AKP011' => THGAMES_URL_PATH . 'assets/img/Hawks.png',
+    //         'AKP022' => THGAMES_URL_PATH . 'assets/img/Hawks.png',
+    //     );
+    //     $game_status = array(
+    //         0 => '結束',
+    //         1 => '延賽',
+    //         2 => '保留',
+    //         4 => '取消',
+    //         9 => '未賽',
+    //     );
+    //     $week_title = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    //     foreach ($data as $value) {
+    //         $need_info = array(
+    //             'GameSno' => '',
+    //             'FieldAbbe' => '',
+    //             'GameDateTimeS' => '',
+    //             'GameDate' => '',
+    //             'GameMonth' => '',
+    //             'GameWeek' => '',
+    //             'HomeTeamName' => '',
+    //             'HomeTeamCode' => '',
+    //             'HomeTeamImg' => '',
+    //             'HomeScore' => '',
+    //             'VisitingTeamName' => '',
+    //             'VisitingTeamCode' => '',
+    //             'VisitingTeamImg' => '',
+    //             'VisitingScore'  => '',
+    //             'GameResult' => '',
+    //             'GameResultName' => '',
+    //             'GameResultText' => 'VS'
+    //         );
+
+    //         if ($value['VisitingTeamCode'] === 'AKP011' || $value['HomeTeamCode'] === 'AKP011') {
+    //             $need_info['GameSno'] = $value['GameSno'];
+    //             $need_info['FieldAbbe'] = $value['FieldAbbe'];
+    //             $need_info['GameDateTimeS'] = date('H:i', strtotime($value['GameDateTimeS']));
+    //             $need_info['GameDate'] = date('Y-m-d', strtotime($value['GameDate']));
+    //             $need_info['GameMonth'] = date('Y-m', strtotime($value['GameDate']));
+    //             $need_info['GameWeek'] = $week_title[date('w', strtotime($value['GameDate']))];
+    //             $need_info['HomeTeamName'] = $value['HomeTeamName'];
+    //             $need_info['HomeTeamCode'] = $value['HomeTeamCode'];
+    //             $need_info['HomeScore'] = $value['HomeScore'];
+    //             $need_info['HomeTeamImg'] = $default_img[$value['HomeTeamCode']];
+    //             $need_info['VisitingTeamName'] = $value['VisitingTeamName'];
+    //             $need_info['VisitingTeamCode'] = $value['VisitingTeamCode'];
+    //             $need_info['VisitingScore'] = $value['VisitingScore'];
+    //             $need_info['VisitingTeamImg'] = $default_img[$value['VisitingTeamCode']];
+    //             $need_info['GameResult'] = $value['GameResult'];
+    //             if ($need_info['GameResult'] === '') {
+    //                 $need_info['GameResult'] = 9;
+    //                 $need_info['HomeScore'] = '-';
+    //                 $need_info['VisitingScore'] = '-';
+    //             }
+    //             if ($need_info['GameResult'] == 0)  $need_info['GameResultText'] = 'FINAL';
+
+    //             $need_info['GameResultName'] = $game_status[$need_info['GameResult']];
+
+    //             array_push($return_data, $need_info);
+    //         }
+    //     }
+    //     return $return_data;
+    // }
 
     //註冊 css js
     public function register_css_js_dependencies()
